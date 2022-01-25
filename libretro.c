@@ -748,7 +748,6 @@ static void check_variables(void)
 bool retro_load_game(const struct retro_game_info *info)
 {
 	static struct retro_input_descriptor desc_msx[] = {
-	static struct retro_input_descriptor desc_coleco[] = {
 		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_RIGHT, "D-Pad Right" },
 		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT, "D-Pad Left" },
 		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP, "D-Pad Up" },
@@ -785,7 +784,7 @@ bool retro_load_game(const struct retro_game_info *info)
 		{ 1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B, "Button 2" },
 
 		{ 0, 0, 0, 0, NULL }
-	}
+	};
 	static struct retro_input_descriptor desc_coleco[] = {
 		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_RIGHT, "Right" },
 		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT, "Left" },
