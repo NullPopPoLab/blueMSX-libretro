@@ -767,14 +767,6 @@ bool retro_load_game(const struct retro_game_info *info)
 		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R3, "Ctrl" },
 		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L3, "Shift" },
 		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_MENU, "Graph" },
-		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT_ANALOG_RIGHT, "Key Right" },
-		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT_ANALOG_LEFT, "Key Left" },
-		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT_ANALOG_DOWN, "Key Down" },
-		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT_ANALOG_UP, "Key Up" },
-		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_RIGHT_ANALOG_RIGHT, "NumPad 6" },
-		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_RIGHT_ANALOG_LEFT, "NumPad 4" },
-		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_RIGHT_ANALOG_DOWN, "NumPad 2" },
-		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_RIGHT_ANALOG_UP, "NumPad 8" },
 
 		{ 1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_RIGHT, "D-Pad Right" },
 		{ 1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT, "D-Pad Left" },
@@ -1071,7 +1063,7 @@ void retro_run(void)
       for (i = 0; i < MAX_PADS; i++)
       {
          joypad_bits[i] = 0;
-         for (j = 0; j < (RETRO_DEVICE_ID_JOYPAD_RIGHT_ANALOG_UP+1); j++)
+         for (j = 0; j < (RETRO_DEVICE_ID_JOYPAD_MENU+1); j++)
             joypad_bits[i] |= input_state_cb(i, RETRO_DEVICE_JOYPAD, 0, j) ? (1 << j) : 0;
       }
    }
@@ -1143,14 +1135,6 @@ void retro_run(void)
 			eventMap[EC_GRAPH]         |= joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_MENU)   ? 1 : 0;
 			eventMap[EC_LSHIFT]        |= joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_L3)     ? 1 : 0;
 			eventMap[EC_CTRL]          |= joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_R3)     ? 1 : 0;
-			eventMap[EC_RIGHT]         |= joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT_ANALOG_RIGHT)  ? 1 : 0;
-			eventMap[EC_LEFT]          |= joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT_ANALOG_LEFT)   ? 1 : 0;
-			eventMap[EC_DOWN]          |= joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT_ANALOG_DOWN)   ? 1 : 0;
-			eventMap[EC_UP]            |= joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT_ANALOG_UP)     ? 1 : 0;
-			eventMap[RETROK_KP6]       |= joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT_ANALOG_RIGHT) ? 1 : 0;
-			eventMap[RETROK_KP4]       |= joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT_ANALOG_LEFT)  ? 1 : 0;
-			eventMap[RETROK_KP2]       |= joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT_ANALOG_DOWN)  ? 1 : 0;
-			eventMap[RETROK_KP8]       |= joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT_ANALOG_UP)    ? 1 : 0;
 		}
 		if(input_devices[1]==RETRO_DEVICE_JOYPAD){
 			eventMap[EC_JOY2_UP]       = joypad_bits[1] & (1 << RETRO_DEVICE_ID_JOYPAD_UP)     ? 1 : 0;
