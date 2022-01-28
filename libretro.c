@@ -66,6 +66,9 @@ static bool msx_ym2413_enable;
 static bool use_overscan = true;
 int msx2_dif = 0;
 
+bool ADVANCED_M3U=FALSE;
+int ADVANCED_FD1=-1;
+int ADVANCED_FD2=-1;
 
 void retro_set_video_refresh(retro_video_refresh_t cb) { video_cb = cb; }
 void retro_set_input_poll(retro_input_poll_t cb) { input_poll_cb = cb; }
@@ -265,21 +268,63 @@ static bool read_m3u(const char *file)
    {
       char *carriage_return = NULL;
       char *newline         = NULL;
+		const char* p=line;
+		char typ,num,rof;
 
-      if (line[0] == '#')
+      if (p[0] == '#')
          continue;
 
-      carriage_return = strchr(line, '\r');
+      carriage_return = strchr(p, '\r');
       if (carriage_return)
          *carriage_return = '\0';
 
-      newline = strchr(line, '\n');
+      newline = strchr(p, '\n');
       if (newline)
          *newline = '\0';
 
-      if (line[0] != '\0')
+		if(*p=='*'){
+			// advanced mark 
+			ADVANCED_M3U=TRUE;
+			++p;
+
+			if(*p && *p!=';')typ=*p++;
+			else typ=0;
+			if(*p && *p!=';')num=*p++;
+			else num=0;
+			if(*p=='!')rof=*p++;
+			else rof=0;
+			if(*p==';')++p;
+
+			switch(typ){
+				case 'F': /* floppy drive */
+				switch(num){
+					case '1': /* 1st floppy drive */
+					if(*p)ADVANCED_FD1=disk_images;
+					break;
+
+					case '2': /* 2nd floppy drive */
+					if(*p)ADVANCED_FD2=disk_images;
+					break;
+				}
+				break;
+
+				case 'T': /* tape drive */
+				break;
+
+				case 'R': /* ROM slot */
+				break;
+
+				case 'H': /* hard drive */
+				break;
+
+				case 'O': /* optical drive */
+				break;
+			}
+		}
+
+      if (p[0] != '\0')
       {
-         snprintf(name, sizeof(name), "%s%c%s", base_dir, SLASH, line);
+         snprintf(name, sizeof(name), "%s%c%s", base_dir, SLASH, p);
          strcpy(disk_paths[disk_images], name);
          disk_images++;
       }
@@ -936,10 +981,16 @@ bool retro_load_game(const struct retro_game_info *info)
                log_cb(RETRO_LOG_ERROR, "%s\n", "[libretro]: failed to read m3u file ...");
             return false;
          }
-         for (i = 0; (i <= disk_images) && (i <= 1); i++)
-         {
-            strcpy(properties->media.disks[i].fileName , disk_paths[i]);
-         }
+		if(ADVANCED_M3U){
+			if(ADVANCED_FD1>=0)strcpy(properties->media.disks[0].fileName , disk_paths[ADVANCED_FD1]);
+			if(ADVANCED_FD2>=0)strcpy(properties->media.disks[1].fileName , disk_paths[ADVANCED_FD2]);
+		}
+		else{
+			for (i = 0; (i <= disk_images) && (i <= 1); i++)
+			{
+				strcpy(properties->media.disks[i].fileName , disk_paths[i]);
+			}
+		}
          disk_inserted = true;
          attach_disk_swap_interface();
          break;
