@@ -302,11 +302,19 @@ static bool read_m3u(const char *file)
 				case 'F': /* floppy drive */
 				switch(num){
 					case '1': /* 1st floppy drive */
-					if(*p)ADVANCED_FD1=disk_images;
+					if(*p){
+						snprintf(name, sizeof(name), "%s%c%s", base_dir, SLASH, p);
+						strcpy(disk_paths[disk_images], name);
+						ADVANCED_FD1=disk_images++;
+					}
 					break;
 
 					case '2': /* 2nd floppy drive */
-					if(*p)ADVANCED_FD2=disk_images;
+					if(*p){
+						snprintf(name, sizeof(name), "%s%c%s", base_dir, SLASH, p);
+						strcpy(disk_paths[disk_images], name);
+						ADVANCED_FD2=disk_images++;
+					}
 					break;
 				}
 				break;
@@ -347,13 +355,12 @@ static bool read_m3u(const char *file)
 				break;
 			}
 		}
-
-      if (p[0] != '\0')
-      {
-         snprintf(name, sizeof(name), "%s%c%s", base_dir, SLASH, p);
-         strcpy(disk_paths[disk_images], name);
-         disk_images++;
-      }
+		else if (p[0] != '\0')
+		{
+			snprintf(name, sizeof(name), "%s%c%s", base_dir, SLASH, p);
+			strcpy(disk_paths[disk_images], name);
+			disk_images++;
+		}
    }
 
    fclose(f);
