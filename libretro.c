@@ -181,6 +181,9 @@ unsigned disk_images = 0;
 char disk_paths[10][PATH_MAX];
 bool disk_inserted = false;
 
+char cart_paths[2][PATH_MAX];
+char tape_paths[1][PATH_MAX];
+
 bool set_eject_state(bool ejected)
 {
    disk_inserted = !ejected;
@@ -290,8 +293,8 @@ static bool read_m3u(const char *file)
 			if(*p && *p!=';')typ=*p++;
 			else typ=0;
 			if(*p && *p!=';')num=*p++;
-			else num=0;
-			if(*p=='!')rof=*p++;
+			else num='1';
+			if(*p=='!'){rof=1; ++p;}
 			else rof=0;
 			if(*p==';')++p;
 
@@ -309,9 +312,32 @@ static bool read_m3u(const char *file)
 				break;
 
 				case 'T': /* tape drive */
+				switch(num){
+					case '1': /* 1st tape drive */
+					if(*p){
+						snprintf(name, sizeof(name), "%s%c%s", base_dir, SLASH, p);
+						strcpy(tape_paths[0], name);
+					}
+					break;
+				}
 				break;
 
 				case 'R': /* ROM slot */
+				switch(num){
+					case '1': /* 1st ROM slot */
+					if(*p){
+						snprintf(name, sizeof(name), "%s%c%s", base_dir, SLASH, p);
+						strcpy(cart_paths[0], name);
+					}
+					break;
+
+					case '2': /* 2nd ROM slot */
+					if(*p){
+						snprintf(name, sizeof(name), "%s%c%s", base_dir, SLASH, p);
+						strcpy(cart_paths[1], name);
+					}
+					break;
+				}
 				break;
 
 				case 'H': /* hard drive */
@@ -966,6 +992,10 @@ bool retro_load_game(const struct retro_game_info *info)
    else
       mediaDbSetDefaultRomType(mediaDbStringToType(msx_cartmapper));
 
+	for(i=0;i<10;++i)disk_paths[i][0]=0;
+	for(i=0;i<2;++i)cart_paths[i][0]=0;
+	for(i=0;i<1;++i)tape_paths[i][0]=0;
+
    switch(media_type)
    {
       case MEDIA_TYPE_DISK:
@@ -984,6 +1014,9 @@ bool retro_load_game(const struct retro_game_info *info)
 		if(ADVANCED_M3U){
 			if(ADVANCED_FD1>=0)strcpy(properties->media.disks[0].fileName , disk_paths[ADVANCED_FD1]);
 			if(ADVANCED_FD2>=0)strcpy(properties->media.disks[1].fileName , disk_paths[ADVANCED_FD2]);
+			if(cart_paths[0][0])strcpy(properties->media.carts[0].fileName , cart_paths[0]);
+			if(cart_paths[1][0])strcpy(properties->media.carts[1].fileName , cart_paths[1]);
+			if(tape_paths[0][0])strcpy(properties->media.tapes[0].fileName , tape_paths[0]);
 		}
 		else{
 			for (i = 0; (i <= disk_images) && (i <= 1); i++)
