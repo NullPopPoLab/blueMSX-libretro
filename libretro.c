@@ -300,29 +300,18 @@ static bool read_m3u(const char *file)
 
 			switch(typ){
 				case 'F': /* floppy drive */
-				switch(num){
-					case '0': /* undrived floppy */
-					if(*p){
-						snprintf(name, sizeof(name), "%s%c%s", base_dir, SLASH, p);
-						strcpy(disk_paths[disk_images++], name);
-					}
-					break;
+				if(*p){
+					switch(num){
+						case '1': /* 1st floppy drive */
+						ADVANCED_FD1=disk_images;
+						break;
 
-					case '1': /* 1st floppy drive */
-					if(*p){
-						snprintf(name, sizeof(name), "%s%c%s", base_dir, SLASH, p);
-						strcpy(disk_paths[disk_images], name);
-						ADVANCED_FD1=disk_images++;
+						case '2': /* 2nd floppy drive */
+						ADVANCED_FD2=disk_images;
+						break;
 					}
-					break;
-
-					case '2': /* 2nd floppy drive */
-					if(*p){
-						snprintf(name, sizeof(name), "%s%c%s", base_dir, SLASH, p);
-						strcpy(disk_paths[disk_images], name);
-						ADVANCED_FD2=disk_images++;
-					}
-					break;
+					snprintf(name, sizeof(name), "%s%c%s", base_dir, SLASH, p);
+					strcpy(disk_paths[disk_images++], name);
 				}
 				break;
 
