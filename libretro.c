@@ -1046,24 +1046,29 @@ bool retro_load_game(const struct retro_game_info *info)
             if (properties->media.carts[i].fileName[0] && mapper_auto)
             insertCartridge(properties, i, properties->media.carts[i].fileName, properties->media.carts[i].fileNameInZip, properties->media.carts[i].type, -1);
        */
-      if (properties->media.carts[i].fileName[0] && !mapper_auto)
-         insertCartridge(properties, i, properties->media.carts[i].fileName, properties->media.carts[i].fileNameInZip, mediaDbStringToType(msx_cartmapper), -1);
-
-      updateExtendedRomName(i, properties->media.carts[i].fileName, properties->media.carts[i].fileNameInZip);
+		if (properties->media.carts[i].fileName[0] && !mapper_auto){
+			if (log_cb)log_cb(RETRO_LOG_INFO, "Cart%d: %s\n", i,properties->media.carts[i].fileName);
+			insertCartridge(properties, i, properties->media.carts[i].fileName, properties->media.carts[i].fileNameInZip, mediaDbStringToType(msx_cartmapper), -1);
+		}
+		updateExtendedRomName(i, properties->media.carts[i].fileName, properties->media.carts[i].fileNameInZip);
    }
 
    for (i = 0; i < PROP_MAX_DISKS; i++)
    {
-      if (properties->media.disks[i].fileName[0])
-         insertDiskette(properties, i, properties->media.disks[i].fileName, properties->media.disks[i].fileNameInZip, -1);
-      updateExtendedDiskName(i, properties->media.disks[i].fileName, properties->media.disks[i].fileNameInZip);
+		if (properties->media.disks[i].fileName[0]){
+			if (log_cb)log_cb(RETRO_LOG_INFO, "Disk%d: %s\n", i,properties->media.disks[i].fileName);
+			insertDiskette(properties, i, properties->media.disks[i].fileName, properties->media.disks[i].fileNameInZip, -1);
+		}
+		updateExtendedDiskName(i, properties->media.disks[i].fileName, properties->media.disks[i].fileNameInZip);
    }
 
    for (i = 0; i < PROP_MAX_TAPES; i++)
    {
-      if (properties->media.tapes[i].fileName[0])
-         insertCassette(properties, i, properties->media.tapes[i].fileName, properties->media.tapes[i].fileNameInZip, 0);
-      updateExtendedCasName(i, properties->media.tapes[i].fileName, properties->media.tapes[i].fileNameInZip);
+		if (properties->media.tapes[i].fileName[0]){
+			if (log_cb)log_cb(RETRO_LOG_INFO, "Tape%d: %s\n", i,properties->media.tapes[i].fileName);
+			insertCassette(properties, i, properties->media.tapes[i].fileName, properties->media.tapes[i].fileNameInZip, 0);
+		}
+		updateExtendedCasName(i, properties->media.tapes[i].fileName, properties->media.tapes[i].fileNameInZip);
    }
 
    {
