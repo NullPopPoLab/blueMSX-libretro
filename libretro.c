@@ -66,6 +66,9 @@ static bool msx_ym2413_enable;
 static bool use_overscan = true;
 int msx2_dif = 0;
 
+bool ADVANCED_M3U=FALSE;
+int ADVANCED_FD1=-1;
+int ADVANCED_FD2=-1;
 
 void retro_set_video_refresh(retro_video_refresh_t cb) { video_cb = cb; }
 void retro_set_input_poll(retro_input_poll_t cb) { input_poll_cb = cb; }
@@ -178,6 +181,9 @@ unsigned disk_images = 0;
 char disk_paths[10][PATH_MAX];
 bool disk_inserted = false;
 
+char cart_paths[2][PATH_MAX];
+char tape_paths[1][PATH_MAX];
+
 bool set_eject_state(bool ejected)
 {
    disk_inserted = !ejected;
@@ -265,24 +271,103 @@ static bool read_m3u(const char *file)
    {
       char *carriage_return = NULL;
       char *newline         = NULL;
+		const char* p=line;
+		char typ,num,rof;
 
-      if (line[0] == '#')
+      if (p[0] == '#')
          continue;
 
-      carriage_return = strchr(line, '\r');
+      carriage_return = strchr(p, '\r');
       if (carriage_return)
          *carriage_return = '\0';
 
-      newline = strchr(line, '\n');
+      newline = strchr(p, '\n');
       if (newline)
          *newline = '\0';
 
-      if (line[0] != '\0')
-      {
-         snprintf(name, sizeof(name), "%s%c%s", base_dir, SLASH, line);
-         strcpy(disk_paths[disk_images], name);
-         disk_images++;
-      }
+		if(*p=='*'){
+			// advanced mark 
+			ADVANCED_M3U=TRUE;
+			++p;
+
+			if(*p && *p!=';')typ=*p++;
+			else typ=0;
+			if(*p && *p!=';')num=*p++;
+			else num='0';
+			if(*p=='!'){rof=1; ++p;}
+			else rof=0;
+			if(*p==';')++p;
+
+			switch(typ){
+				case 'F': /* floppy drive */
+				switch(num){
+					case '0': /* undrived floppy */
+					if(*p){
+						snprintf(name, sizeof(name), "%s%c%s", base_dir, SLASH, p);
+						strcpy(disk_paths[disk_images++], name);
+					}
+					break;
+
+					case '1': /* 1st floppy drive */
+					if(*p){
+						snprintf(name, sizeof(name), "%s%c%s", base_dir, SLASH, p);
+						strcpy(disk_paths[disk_images], name);
+						ADVANCED_FD1=disk_images++;
+					}
+					break;
+
+					case '2': /* 2nd floppy drive */
+					if(*p){
+						snprintf(name, sizeof(name), "%s%c%s", base_dir, SLASH, p);
+						strcpy(disk_paths[disk_images], name);
+						ADVANCED_FD2=disk_images++;
+					}
+					break;
+				}
+				break;
+
+				case 'T': /* tape drive */
+				switch(num){
+					case '1': /* 1st tape drive */
+					if(*p){
+						snprintf(name, sizeof(name), "%s%c%s", base_dir, SLASH, p);
+						strcpy(tape_paths[0], name);
+					}
+					break;
+				}
+				break;
+
+				case 'R': /* ROM slot */
+				switch(num){
+					case '1': /* 1st ROM slot */
+					if(*p){
+						snprintf(name, sizeof(name), "%s%c%s", base_dir, SLASH, p);
+						strcpy(cart_paths[0], name);
+					}
+					break;
+
+					case '2': /* 2nd ROM slot */
+					if(*p){
+						snprintf(name, sizeof(name), "%s%c%s", base_dir, SLASH, p);
+						strcpy(cart_paths[1], name);
+					}
+					break;
+				}
+				break;
+
+				case 'H': /* hard drive */
+				break;
+
+				case 'O': /* optical drive */
+				break;
+			}
+		}
+		else if (p[0] != '\0')
+		{
+			snprintf(name, sizeof(name), "%s%c%s", base_dir, SLASH, p);
+			strcpy(disk_paths[disk_images], name);
+			disk_images++;
+		}
    }
 
    fclose(f);
@@ -949,6 +1034,10 @@ bool retro_load_game(const struct retro_game_info *info)
    else
       mediaDbSetDefaultRomType(mediaDbStringToType(msx_cartmapper));
 
+	for(i=0;i<10;++i)disk_paths[i][0]=0;
+	for(i=0;i<2;++i)cart_paths[i][0]=0;
+	for(i=0;i<1;++i)tape_paths[i][0]=0;
+
    switch(media_type)
    {
       case MEDIA_TYPE_DISK:
@@ -964,10 +1053,19 @@ bool retro_load_game(const struct retro_game_info *info)
                log_cb(RETRO_LOG_ERROR, "%s\n", "[libretro]: failed to read m3u file ...");
             return false;
          }
-         for (i = 0; (i <= disk_images) && (i <= 1); i++)
-         {
-            strcpy(properties->media.disks[i].fileName , disk_paths[i]);
-         }
+		if(ADVANCED_M3U){
+			if(ADVANCED_FD1>=0)strcpy(properties->media.disks[0].fileName , disk_paths[ADVANCED_FD1]);
+			if(ADVANCED_FD2>=0)strcpy(properties->media.disks[1].fileName , disk_paths[ADVANCED_FD2]);
+			if(cart_paths[0][0])strcpy(properties->media.carts[0].fileName , cart_paths[0]);
+			if(cart_paths[1][0])strcpy(properties->media.carts[1].fileName , cart_paths[1]);
+			if(tape_paths[0][0])strcpy(properties->media.tapes[0].fileName , tape_paths[0]);
+		}
+		else{
+			for (i = 0; (i <= disk_images) && (i <= 1); i++)
+			{
+				strcpy(properties->media.disks[i].fileName , disk_paths[i]);
+			}
+		}
          disk_inserted = true;
          attach_disk_swap_interface();
          break;
