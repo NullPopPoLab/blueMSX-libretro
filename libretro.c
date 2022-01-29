@@ -293,7 +293,7 @@ static bool read_m3u(const char *file)
 			if(*p && *p!=';')typ=*p++;
 			else typ=0;
 			if(*p && *p!=';')num=*p++;
-			else num='1';
+			else num='0';
 			if(*p=='!'){rof=1; ++p;}
 			else rof=0;
 			if(*p==';')++p;
@@ -301,6 +301,13 @@ static bool read_m3u(const char *file)
 			switch(typ){
 				case 'F': /* floppy drive */
 				switch(num){
+					case '0': /* undrived floppy */
+					if(*p){
+						snprintf(name, sizeof(name), "%s%c%s", base_dir, SLASH, p);
+						strcpy(disk_paths[disk_images++], name);
+					}
+					break;
+
 					case '1': /* 1st floppy drive */
 					if(*p){
 						snprintf(name, sizeof(name), "%s%c%s", base_dir, SLASH, p);
