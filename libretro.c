@@ -371,7 +371,7 @@ static bool read_m3u(const char *file)
    }
 
    fclose(f);
-   return (disk_images != 0);
+   return true;
 }
 
 extern BoardInfo boardInfo;
