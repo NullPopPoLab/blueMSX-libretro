@@ -1043,7 +1043,7 @@ void retro_run(void)
 {
    int i,j;
    bool updated = false;
-   int16_t joypad_bits[MAX_PADS] = {0};
+   int32_t joypad_bits[MAX_PADS] = {0};
    
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) && updated)
       check_variables();
