@@ -372,16 +372,16 @@ static unsigned btn_map[EC_KEYCOUNT] =
    RETROK_COMMA,           //EC_COMMA    61
    RETROK_PERIOD,          //EC_PERIOD   62
    RETROK_SLASH,           //EC_DIV      63
-   RETROK_0,               //EC_UNDSCRE  64 (as Shift+0)
+   RETROK_UNDERSCORE,      //EC_UNDSCRE  64 (as Shift+0)
    RETROK_RSHIFT,          //EC_RSHIFT   65
 
    // ROW 5
    RETROK_CAPSLOCK,        //EC_CAPS     66
    RETROK_LALT,            //EC_GRAPH    67
-   RETROK_UNKNOWN,         //EC_TORIKE   68
+   RETROK_CANCEL,          //EC_TORIKE   68
    RETROK_SPACE,           //EC_SPACE    69
-   RETROK_UNKNOWN,         //EC_JIKKOU   70
-   RETROK_UNKNOWN,         //EC_CODE     71
+   RETROK_EXEC,            //EC_JIKKOU   70
+   RETROK_KANA,            //EC_CODE     71
    RETROK_PAUSE,           //EC_PAUSE    72
 
    // ARROWS
