@@ -455,7 +455,7 @@ static unsigned btn_map[EC_KEYCOUNT] =
    RETROK_CANCEL,          //EC_TORIKE   68
    RETROK_SPACE,           //EC_SPACE    69
    RETROK_EXEC,            //EC_JIKKOU   70
-   RETROK_CODE,            //EC_CODE     71
+   RETROK_KANA,            //EC_CODE     71
    RETROK_PAUSE,           //EC_PAUSE    72
 
    // ARROWS
@@ -1135,7 +1135,7 @@ void retro_run(void)
 {
    int i,j;
    bool updated = false;
-   int16_t joypad_bits[MAX_PADS] = {0};
+   int32_t joypad_bits[MAX_PADS] = {0};
    
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) && updated)
       check_variables();
