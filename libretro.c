@@ -381,7 +381,7 @@ static unsigned btn_map[EC_KEYCOUNT] =
    RETROK_CANCEL,          //EC_TORIKE   68
    RETROK_SPACE,           //EC_SPACE    69
    RETROK_EXEC,            //EC_JIKKOU   70
-   RETROK_CODE,            //EC_CODE     71
+   RETROK_KANA,            //EC_CODE     71
    RETROK_PAUSE,           //EC_PAUSE    72
 
    // ARROWS
