@@ -61,7 +61,7 @@ int insertCartridge(Properties* properties, int drive, const char* fname, const 
     emulatorResetMixer();
 
     if (isZip) {
-        if (inZipFile != NULL) {
+        if (inZipFile != NULL && *inZipFile) {
             strcpy(romName, inZipFile);
         }
         else {
@@ -276,7 +276,7 @@ int insertDiskette(Properties* properties, int drive, const char* fname, const c
     emulatorResetMixer();
 
     if (isZip) {
-        if (inZipFile != NULL) {
+        if (inZipFile != NULL && *inZipFile) {
             strcpy(diskName, inZipFile);
         }
         else {
@@ -386,7 +386,7 @@ int insertCassette(Properties* properties, int drive, const char* fname, const c
     if (fname) strcpy(filename, fname);
 
     if (isZip) {
-        if (inZipFile != NULL) {
+        if (inZipFile != NULL && *inZipFile) {
             strcpy(tapeName, inZipFile);
         }
         else {
