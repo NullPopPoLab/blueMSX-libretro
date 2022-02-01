@@ -1110,6 +1110,15 @@ void retro_run(void)
       for (j = 0; j < EC_KEYBOARD_KEYCOUNT; j++)
          eventMap[j] = input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, btn_map[j]) ? 1 : 0;
 
+      if (input_devices[0] == RETRO_DEVICE_KEYBOARD){
+		if(input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_JOYPAD_UP))eventMap[EC_UP]|=1;
+		if(input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_JOYPAD_DOWN))eventMap[EC_DOWN]|=1;
+		if(input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_JOYPAD_LEFT))eventMap[EC_LEFT]|=1;
+		if(input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_JOYPAD_RIGHT))eventMap[EC_RIGHT]|=1;
+		if(input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_JOYPAD_1))eventMap[EC_JOY1_BUTTON1]|=1;
+		if(input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_JOYPAD_2))eventMap[EC_JOY1_BUTTON2]|=1;
+      }
+
       if (input_devices[0] == RETRO_DEVICE_MAPPER && !is_spectra){
          eventMap[EC_LEFT]   = joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)  ? 1 : 0;
          eventMap[EC_RIGHT]  = joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT) ? 1 : 0;
