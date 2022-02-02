@@ -1119,15 +1119,6 @@ void retro_run(void)
       for (j = 0; j < EC_KEYBOARD_KEYCOUNT; j++)
          eventMap[j] = input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, btn_map[j]) ? 1 : 0;
 
-      if (input_devices[0] == RETRO_DEVICE_KEYBOARD){
-		if(input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_JOYPAD_UP))eventMap[EC_UP]|=1;
-		if(input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_JOYPAD_DOWN))eventMap[EC_DOWN]|=1;
-		if(input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_JOYPAD_LEFT))eventMap[EC_LEFT]|=1;
-		if(input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_JOYPAD_RIGHT))eventMap[EC_RIGHT]|=1;
-		if(input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_JOYPAD_1))eventMap[EC_JOY1_BUTTON1]|=1;
-		if(input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_JOYPAD_2))eventMap[EC_JOY1_BUTTON2]|=1;
-      }
-
 		switch(input_devices[0]){
 			case RETRO_DEVICE_JOYPAD:
 			eventMap[EC_JOY1_UP]       = joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_UP)     ? 1 : 0;
@@ -1143,8 +1134,8 @@ void retro_run(void)
 			eventMap[EC_DOWN]          |= joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_DOWN)   ? 1 : 0;
 			eventMap[EC_LEFT]          |= joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)   ? 1 : 0;
 			eventMap[EC_RIGHT]         |= joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)  ? 1 : 0;
-			eventMap[EC_Z]             |= joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_A)      ? 1 : 0;
-			eventMap[EC_X]             |= joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_B)      ? 1 : 0;
+			eventMap[EC_X]             |= joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_A)      ? 1 : 0;
+			eventMap[EC_Z]             |= joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_B)      ? 1 : 0;
 			break;
 
 			case RETRO_DEVICE_JOY2NUMPAD:
@@ -1152,8 +1143,8 @@ void retro_run(void)
 			eventMap[EC_NUM2]          |= joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_DOWN)   ? 1 : 0;
 			eventMap[EC_NUM4]          |= joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)   ? 1 : 0;
 			eventMap[EC_NUM6]          |= joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)  ? 1 : 0;
-			eventMap[EC_Z]             |= joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_A)      ? 1 : 0;
-			eventMap[EC_X]             |= joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_B)      ? 1 : 0;
+			eventMap[EC_X]             |= joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_A)      ? 1 : 0;
+			eventMap[EC_Z]             |= joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_B)      ? 1 : 0;
 			break;
 		}
 		switch(input_devices[0]){
@@ -1173,6 +1164,15 @@ void retro_run(void)
 			eventMap[EC_GRAPH]         |= joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_MENU)   ? 1 : 0;
 			eventMap[EC_LSHIFT]        |= joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_L3)     ? 1 : 0;
 			eventMap[EC_CTRL]          |= joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_R3)     ? 1 : 0;
+			break;
+
+			case RETRO_DEVICE_KEYBOARD:
+			if(input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_JOYPAD_UP))eventMap[EC_UP]|=1;
+			if(input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_JOYPAD_DOWN))eventMap[EC_DOWN]|=1;
+			if(input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_JOYPAD_LEFT))eventMap[EC_LEFT]|=1;
+			if(input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_JOYPAD_RIGHT))eventMap[EC_RIGHT]|=1;
+			if(input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_JOYPAD_1))eventMap[EC_JOY1_BUTTON1]|=1;
+			if(input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_JOYPAD_2))eventMap[EC_JOY1_BUTTON2]|=1;
 			break;
 		}
 		if(input_devices[1]==RETRO_DEVICE_JOYPAD){
