@@ -530,9 +530,9 @@ void retro_set_environment(retro_environment_t cb)
 {
    static const struct retro_controller_description port1[] = {
       { "RetroPad",              RETRO_DEVICE_JOYPAD },
-      { "RetroKeyboard",         RETRO_DEVICE_KEYBOARD },
       { "RetroPad to Cursor",    RETRO_DEVICE_JOY2CURSOR },
       { "RetroPad to NumPad",    RETRO_DEVICE_JOY2NUMPAD },
+      { "RetroKeyboard",         RETRO_DEVICE_KEYBOARD },
 /*      { "RetroPad Keyboard Map", RETRO_DEVICE_MAPPER },*/
       { 0 },
    };
