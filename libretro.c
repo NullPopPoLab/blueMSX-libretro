@@ -1014,20 +1014,27 @@ bool retro_load_game(const struct retro_game_info *info)
                log_cb(RETRO_LOG_ERROR, "%s\n", "[libretro]: failed to read m3u file ...");
             return false;
          }
+
 		if(ADVANCED_M3U){
 			if(ADVANCED_FD1>=0)strcpy(properties->media.disks[0].fileName , disk_paths[ADVANCED_FD1]);
 			if(ADVANCED_FD2>=0)strcpy(properties->media.disks[1].fileName , disk_paths[ADVANCED_FD2]);
 			if(cart_paths[0][0])strcpy(properties->media.carts[0].fileName , cart_paths[0]);
 			if(cart_paths[1][0])strcpy(properties->media.carts[1].fileName , cart_paths[1]);
 			if(tape_paths[0][0])strcpy(properties->media.tapes[0].fileName , tape_paths[0]);
+			disk_inserted = (ADVANCED_FD1>=0)||(ADVANCED_FD2>=0);
 		}
 		else{
 			for (i = 0; (i <= disk_images) && (i <= 1); i++)
 			{
 				strcpy(properties->media.disks[i].fileName , disk_paths[i]);
 			}
+			disk_inserted = disk_images>0;
 		}
-         disk_inserted = true;
+		properties->media.disks[0].fileNameInZip[0]=0;
+		properties->media.disks[1].fileNameInZip[0]=0;
+		properties->media.carts[0].fileNameInZip[0]=0;
+		properties->media.carts[1].fileNameInZip[0]=0;
+		properties->media.tapes[0].fileNameInZip[0]=0;
          attach_disk_swap_interface();
          break;
       case MEDIA_TYPE_TAPE:
