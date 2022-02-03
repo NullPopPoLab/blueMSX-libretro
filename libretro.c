@@ -243,6 +243,25 @@ bool replace_image_index(unsigned index,
    return true;
 }
 
+static bool disk_get_image_label(unsigned index, char *label, size_t len)
+{
+   if (len < 1)
+      return false;
+
+		if (disk_paths[index][0])
+		{
+			const char* c;
+			for(c=disk_paths[index];*c;++c);
+			for(;c>disk_paths[index];--c){
+				if(c[-1]=='/')break;
+			}
+			strncpy(label, c, len);
+			return true;
+		}
+
+   return false;
+}
+
 void attach_disk_swap_interface(void)
 {
    /* these functions are unused */
@@ -253,6 +272,7 @@ void attach_disk_swap_interface(void)
    dskcb.get_num_images  = get_num_images;
    dskcb.add_image_index = add_image_index;
    dskcb.replace_image_index = replace_image_index;
+   dskcb.get_image_label = disk_get_image_label;
 
    environ_cb(RETRO_ENVIRONMENT_SET_DISK_CONTROL_INTERFACE, &dskcb);
 }
