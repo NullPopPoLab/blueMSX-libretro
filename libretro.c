@@ -177,7 +177,7 @@ int get_media_type(const char* filename)
 
 /* end .dsk support */
 /* .dsk swap support */
-struct retro_disk_control_callback dskcb;
+struct retro_disk_control_ext_callback dskcb;
 unsigned disk_index = 0;
 unsigned disk_images = 0;
 char disk_paths[10][PATH_MAX];
