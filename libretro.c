@@ -270,9 +270,11 @@ void attach_disk_swap_interface(void)
    dskcb.get_num_images  = get_num_images;
    dskcb.add_image_index = add_image_index;
    dskcb.replace_image_index = replace_image_index;
+   dskcb.set_initial_image = NULL;
+   dskcb.get_image_path = NULL;
    dskcb.get_image_label = disk_get_image_label;
 
-   environ_cb(RETRO_ENVIRONMENT_SET_DISK_CONTROL_INTERFACE, &dskcb);
+   environ_cb(RETRO_ENVIRONMENT_SET_DISK_CONTROL_EXT_INTERFACE, &dskcb);
 }
 /* end .dsk swap support */
 
