@@ -311,8 +311,7 @@ static bool read_m3u(const char *file)
       return false;
 
    while (fgets(line, sizeof(line), f)
-         && disk_images < 
-         sizeof(disk_paths) / sizeof(disk_paths[0])) 
+         && disk_images < MAX_DISK_ENTRIES) 
    {
       char *carriage_return = NULL;
       char *newline         = NULL;
@@ -1069,7 +1068,7 @@ bool retro_load_game(const struct retro_game_info *info)
    else
       mediaDbSetDefaultRomType(mediaDbStringToType(msx_cartmapper));
 
-	for(i=0;i<10;++i)disk_paths[i][0]=0;
+	for(i=0;i<MAX_DISK_ENTRIES;++i)disk_paths[i][0]=0;
 	for(i=0;i<2;++i)cart_paths[i][0]=0;
 	for(i=0;i<1;++i)tape_paths[i][0]=0;
 	for(i=0;i<PROP_MAX_DISKS;++i){
@@ -1154,9 +1153,11 @@ bool retro_load_game(const struct retro_game_info *info)
 
    for (i = 0; i < PROP_MAX_TAPES; i++)
    {
+		disk_inserted[i] = false;
 		if (properties->media.tapes[i].fileName[0]){
 			if (log_cb)log_cb(RETRO_LOG_INFO, "Tape%d: %s\n", i,properties->media.tapes[i].fileName);
-			insertCassette(properties, i, properties->media.tapes[i].fileName, properties->media.tapes[i].fileNameInZip, 0);
+			disk_inserted[i] = insertCassette(properties, i, properties->media.tapes[i].fileName, properties->media.tapes[i].fileNameInZip, 0);
+			if(!disk_inserted[i])inserted_disk_idx[i]=-1;
 		}
 		updateExtendedCasName(i, properties->media.tapes[i].fileName, properties->media.tapes[i].fileNameInZip);
    }
