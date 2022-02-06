@@ -204,7 +204,7 @@ bool set_drive_eject_state(unsigned drive, bool ejected)
 
 static bool get_drive_eject_state(unsigned drive)
 {
-   return !disk.disk_inserted[drive];
+   return !disk_inserted[drive];
 }
 
 unsigned get_image_index(void)
