@@ -178,7 +178,8 @@ int get_media_type(const char* filename)
 struct retro_disk_control_ext2_callback dskcb;
 unsigned disk_index = 0;
 unsigned disk_images = 0;
-char disk_paths[10][PATH_MAX];
+#define MAX_DISK_ENTRIES 50
+char disk_paths[MAX_DISK_ENTRIES][PATH_MAX];
 bool disk_inserted[PROP_MAX_DISKS];
 static int inserted_disk_idx[PROP_MAX_DISKS];
 
@@ -309,8 +310,7 @@ static bool read_m3u(const char *file)
       return false;
 
    while (fgets(line, sizeof(line), f)
-         && disk_images < 
-         sizeof(disk_paths) / sizeof(disk_paths[0])) 
+         && disk_images < MAX_DISK_ENTRIES) 
    {
       char *carriage_return = NULL;
       char *newline         = NULL;
@@ -1037,7 +1037,7 @@ bool retro_load_game(const struct retro_game_info *info)
    else
       mediaDbSetDefaultRomType(mediaDbStringToType(msx_cartmapper));
 
-	for(i=0;i<10;++i)disk_paths[i][0]=0;
+	for(i=0;i<MAX_DISK_ENTRIES;++i)disk_paths[i][0]=0;
 	for(i=0;i<2;++i)cart_paths[i][0]=0;
 	for(i=0;i<1;++i)tape_paths[i][0]=0;
 	for(i=0;i<PROP_MAX_DISKS;++i){
