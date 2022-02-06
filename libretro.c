@@ -1069,10 +1069,9 @@ bool retro_load_game(const struct retro_game_info *info)
 			if(tape_paths[0][0])strcpy(properties->media.tapes[0].fileName , tape_paths[0]);
 		}
 		else{
-			for (i = 0; (i <= disk_images) && (i <= 1); i++)
-			{
-				strcpy(properties->media.disks[i].fileName , disk_paths[i]);
-				disk_inserted[i]=true;
+			if(disk_images>0){
+				strcpy(properties->media.disks[0].fileName , disk_paths[0]);
+				disk_inserted[0]=true;
 			}
 		}
 		properties->media.disks[0].fileNameInZip[0]=0;
