@@ -179,27 +179,33 @@ struct retro_disk_control_ext2_callback dskcb;
 unsigned disk_index = 0;
 unsigned disk_images = 0;
 char disk_paths[10][PATH_MAX];
-bool disk_inserted[2] = {false,false};
-static int inserted_disk_idx[2]={-1,-1};
+bool disk_inserted[PROP_MAX_DISKS];
+static int inserted_disk_idx[PROP_MAX_DISKS];
 
 char cart_paths[2][PATH_MAX];
 char tape_paths[1][PATH_MAX];
 
 bool set_drive_eject_state(unsigned drive, bool ejected)
 {
+	bool ret=true;
 	if(ejected){
 		disk_inserted[drive] = false;
 		inserted_disk_idx[drive]=-1;
 	}
 	else{
 	   emulatorSuspend();
-	   insertDiskette(properties, drive, disk_paths[disk_index], NULL, -1);
+	   ret=insertDiskette(properties, drive, disk_paths[disk_index], NULL, -1);
 	   emulatorResume();
-
-		disk_inserted[drive] = true;
-		inserted_disk_idx[drive]=disk_index;
+		if(ret){
+			disk_inserted[drive] = true;
+			inserted_disk_idx[drive]=disk_index;
+		}
+		else{
+			disk_inserted[drive] = false;
+			inserted_disk_idx[drive]=-1;
+		}
 	}
-	return true;
+	return ret;
 }
 
 static bool get_drive_eject_state(unsigned drive)
@@ -220,7 +226,7 @@ bool set_image_index(unsigned index)
 
 static unsigned get_num_drives(void)
 {
-   return 2;
+   return PROP_MAX_DISKS;
 }
 
 unsigned get_num_images(void)
@@ -1034,7 +1040,10 @@ bool retro_load_game(const struct retro_game_info *info)
 	for(i=0;i<10;++i)disk_paths[i][0]=0;
 	for(i=0;i<2;++i)cart_paths[i][0]=0;
 	for(i=0;i<1;++i)tape_paths[i][0]=0;
-	memset(disk_inserted,0,sizeof(disk_inserted));
+	for(i=0;i<PROP_MAX_DISKS;++i){
+		disk_inserted[i]=false;
+		inserted_disk_idx[i]=-1;
+	}
 
    switch(media_type)
    {
@@ -1042,7 +1051,6 @@ bool retro_load_game(const struct retro_game_info *info)
          strcpy(disk_paths[0] , info->path);
          strcpy(properties->media.disks[0].fileName , info->path);
 		inserted_disk_idx[0]=0;
-         disk_inserted[0] = true;
          attach_disk_swap_interface();
          break;
       case MEDIA_TYPE_DISK_BUNDLE:
@@ -1057,12 +1065,10 @@ bool retro_load_game(const struct retro_game_info *info)
 			if(ADVANCED_FD1>=0){
 				strcpy(properties->media.disks[0].fileName , disk_paths[ADVANCED_FD1]);
 				inserted_disk_idx[0]=ADVANCED_FD1;
-				disk_inserted[0]=true;
 			}
 			if(ADVANCED_FD2>=0){
 				strcpy(properties->media.disks[1].fileName , disk_paths[ADVANCED_FD2]);
 				inserted_disk_idx[1]=ADVANCED_FD2;
-				disk_inserted[1]=true;
 			}
 			if(cart_paths[0][0])strcpy(properties->media.carts[0].fileName , cart_paths[0]);
 			if(cart_paths[1][0])strcpy(properties->media.carts[1].fileName , cart_paths[1]);
@@ -1071,7 +1077,6 @@ bool retro_load_game(const struct retro_game_info *info)
 		else{
 			if(disk_images>0){
 				strcpy(properties->media.disks[0].fileName , disk_paths[0]);
-				disk_inserted[0]=true;
 			}
 		}
 		properties->media.disks[0].fileNameInZip[0]=0;
@@ -1115,9 +1120,11 @@ bool retro_load_game(const struct retro_game_info *info)
 
    for (i = 0; i < PROP_MAX_TAPES; i++)
    {
+		disk_inserted[i] = false;
 		if (properties->media.tapes[i].fileName[0]){
 			if (log_cb)log_cb(RETRO_LOG_INFO, "Tape%d: %s\n", i,properties->media.tapes[i].fileName);
-			insertCassette(properties, i, properties->media.tapes[i].fileName, properties->media.tapes[i].fileNameInZip, 0);
+			disk_inserted[i] = insertCassette(properties, i, properties->media.tapes[i].fileName, properties->media.tapes[i].fileNameInZip, 0);
+			if(!disk_inserted[i])inserted_disk_idx[i]=-1;
 		}
 		updateExtendedCasName(i, properties->media.tapes[i].fileName, properties->media.tapes[i].fileNameInZip);
    }
