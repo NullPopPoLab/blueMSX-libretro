@@ -180,7 +180,8 @@ int get_media_type(const char* filename)
 struct retro_disk_control_ext2_callback dskcb;
 unsigned disk_index = 0;
 unsigned disk_images = 0;
-char disk_paths[10][PATH_MAX];
+#define MAX_DISK_ENTRIES 50
+char disk_paths[MAX_DISK_ENTRIES][PATH_MAX];
 bool disk_inserted[PROP_MAX_DISKS];
 static int inserted_disk_idx[PROP_MAX_DISKS];
 
