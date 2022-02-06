@@ -191,7 +191,7 @@ bool set_drive_eject_state(unsigned drive, bool ejected)
 {
 	if(ejected){
 		disk_inserted[drive] = false;
-		inserted_disk_idx[drive]=-1:
+		inserted_disk_idx[drive]=-1;
 	}
 	else{
 	   emulatorSuspend();
