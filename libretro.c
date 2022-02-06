@@ -1154,11 +1154,9 @@ bool retro_load_game(const struct retro_game_info *info)
 
    for (i = 0; i < PROP_MAX_TAPES; i++)
    {
-		disk_inserted[i] = false;
 		if (properties->media.tapes[i].fileName[0]){
 			if (log_cb)log_cb(RETRO_LOG_INFO, "Tape%d: %s\n", i,properties->media.tapes[i].fileName);
-			disk_inserted[i] = insertCassette(properties, i, properties->media.tapes[i].fileName, properties->media.tapes[i].fileNameInZip, 0);
-			if(!disk_inserted[i])inserted_disk_idx[i]=-1;
+			insertCassette(properties, i, properties->media.tapes[i].fileName, properties->media.tapes[i].fileNameInZip, 0);
 		}
 		updateExtendedCasName(i, properties->media.tapes[i].fileName, properties->media.tapes[i].fileNameInZip);
    }
