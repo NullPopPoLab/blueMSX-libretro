@@ -1094,14 +1094,10 @@ bool retro_load_game(const struct retro_game_info *info)
          }
 
 		if(ADVANCED_M3U){
-			if(ADVANCED_FD1>=0){
-				strcpy(properties->media.disks[0].fileName , disk_paths[ADVANCED_FD1]);
-				inserted_disk_idx[0]=ADVANCED_FD1;
-			}
-			if(ADVANCED_FD2>=0){
-				strcpy(properties->media.disks[1].fileName , disk_paths[ADVANCED_FD2]);
-				inserted_disk_idx[1]=ADVANCED_FD2;
-			}
+			inserted_disk_idx[0]=ADVANCED_FD1;
+			inserted_disk_idx[1]=ADVANCED_FD2;
+			if(ADVANCED_FD1>=0)strcpy(properties->media.disks[0].fileName , disk_paths[ADVANCED_FD1]);
+			if(ADVANCED_FD2>=0)strcpy(properties->media.disks[1].fileName , disk_paths[ADVANCED_FD2]);
 			if(cart_paths[0][0])strcpy(properties->media.carts[0].fileName , cart_paths[0]);
 			if(cart_paths[1][0])strcpy(properties->media.carts[1].fileName , cart_paths[1]);
 			if(tape_paths[0][0])strcpy(properties->media.tapes[0].fileName , tape_paths[0]);
@@ -1109,6 +1105,7 @@ bool retro_load_game(const struct retro_game_info *info)
 		else{
 			if(disk_images>0){
 				strcpy(properties->media.disks[0].fileName , disk_paths[0]);
+				inserted_disk_idx[0]=0;
 			}
 		}
 		properties->media.disks[0].fileNameInZip[0]=0;
