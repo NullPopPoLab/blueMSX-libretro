@@ -1263,7 +1263,7 @@ void retro_run(void)
    else
    {
       /* MSX Input Part */
-      for (j = 0; j < EC_KEYBOARD_KEYCOUNT; j++)
+		for (j = 0; j < EC_KEYBOARD_KEYCOUNT; j++){
          eventMap[j] = input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, btn_map[j]) ? 1 : 0;
 
 			switch(btn_map[j]){
@@ -1311,6 +1311,7 @@ void retro_run(void)
 					input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_KP369))eventMap[j] = 1;
 				break;
 			}
+		}
 		if(input_devices[0]==RETRO_DEVICE_JOYPAD){
 			eventMap[EC_JOY1_UP]       = joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_UP)     ? 1 : 0;
 			eventMap[EC_JOY1_DOWN]     = joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_DOWN)   ? 1 : 0;
