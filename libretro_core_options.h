@@ -81,6 +81,7 @@ struct retro_core_option_definition option_defs_us[] = {
          { "disabled",   NULL },
          { "enabled",   NULL },
          { "MSX2",   NULL },
+         { "bordering",   NULL },
          { NULL, NULL },
       },
       "disabled"
