@@ -774,6 +774,7 @@ static void check_variables(void)
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
    {
+      int view_width_old = view_width;
       int view_height_old = view_height;
 
       // [CAUTION] 
@@ -783,9 +784,13 @@ static void check_variables(void)
           view_width = MAX_VIEW_WIDTH;
           view_height = MAX_VIEW_HEIGHT;
       }
-      else if (!strcmp(var.value, "bordering")){
+      else if (!strcmp(var.value, "fullborder")){
           view_width = 272;
           view_height = 228;
+      }
+      else if (!strcmp(var.value, "sideborder")){
+          view_width = 272;
+          view_height = 212;
       }
       else if (!strcmp(var.value, "MSX2")){
           view_width = 256;
@@ -796,9 +801,9 @@ static void check_variables(void)
           view_height = 192;
       }
 
-      if (view_height_old != view_height)
+      if (view_height_old != view_height || view_width_old != view_width)
          geometry_update = true;
-      }
+   }
 
    var.key = "bluemsx_vdp_synctype";
    var.value = NULL;
