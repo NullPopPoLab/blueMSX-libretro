@@ -36,6 +36,8 @@
 
 #include "libretro_core_options.h"
 
+#define CUSTOM_VERSION "+NC38"
+
 retro_log_printf_t log_cb;
 static retro_video_refresh_t video_cb;
 static retro_input_poll_t input_poll_cb;
@@ -507,9 +509,9 @@ void retro_get_system_info(struct retro_system_info *info)
 {
    info->library_name     = "blueMSX";
 #ifdef GIT_VERSION
-   info->library_version  = "git" GIT_VERSION;
+   info->library_version  = "git" GIT_VERSION CUSTOM_VERSION;
 #else
-   info->library_version  = "svn";
+   info->library_version  = "svn" CUSTOM_VERSION;
 #endif
    info->need_fullpath    = true;
    info->block_extract    = false;
