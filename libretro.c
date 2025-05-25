@@ -62,6 +62,10 @@ static unsigned width = 284;
 static unsigned height = 240;
 static int double_width;
 
+#define MAX_VIEW_WIDTH 272
+#define MAX_VIEW_HEIGHT 240
+int view_width = MAX_VIEW_WIDTH;
+int view_height = MAX_VIEW_HEIGHT;
 
 static char msx_type[256];
 static char msx_cartmapper[256];
@@ -69,8 +73,6 @@ static bool mapper_auto;
 bool is_coleco, is_sega, is_spectra, is_auto, auto_rewind_cas;
 static unsigned msx_vdp_synctype;
 static bool msx_ym2413_enable;
-static bool use_overscan = true;
-int msx2_dif = 0;
 
 AdvancedM3U *am3u=NULL;
 AdvancedM3UDevice *am3u_fd=NULL;
@@ -552,10 +554,8 @@ void retro_get_system_info(struct retro_system_info *info)
 
 void retro_get_system_av_info(struct retro_system_av_info *info)
 {
-    width  = use_overscan ? 272 : (272 - 16);
-    height = use_overscan ? 240 : (240 - 48 + (msx2_dif * 2));
-   info->geometry.base_width = width ;
-   info->geometry.base_height = height ;
+   info->geometry.base_width = width = view_width;
+   info->geometry.base_height = height = view_height;
    info->geometry.max_width = FB_MAX_LINE_WIDTH ;
    info->geometry.max_height = FB_MAX_LINES ;
    info->geometry.aspect_ratio = 0;
@@ -770,22 +770,35 @@ static void check_variables(void)
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
    {
-      bool newval = (!strcmp(var.value, "disabled"));
-      int msx2_dif_old = msx2_dif;
+      int view_width_old = view_width;
+      int view_height_old = view_height;
 
-      if (!strcmp(var.value, "MSX2"))
-         msx2_dif = 10;
-      else
-         msx2_dif = 0;
-
-      if (msx2_dif_old != msx2_dif)
-         geometry_update = true;
-
-      if (newval != use_overscan)
-      {
-         use_overscan = newval;
-         geometry_update = true;
+      // [CAUTION] 
+      // bluemsx_overscan means "use cropping" 
+      // and "disabled" means "use overscan" 
+      if (!strcmp(var.value, "disabled")){
+          view_width = MAX_VIEW_WIDTH;
+          view_height = MAX_VIEW_HEIGHT;
       }
+      else if (!strcmp(var.value, "fullborder")){
+          view_width = 272;
+          view_height = 228;
+      }
+      else if (!strcmp(var.value, "sideborder")){
+          view_width = 272;
+          view_height = 212;
+      }
+      else if (!strcmp(var.value, "MSX2")){
+          view_width = 256;
+          view_height = 212;
+      }
+      else{
+          view_width = 256;
+          view_height = 192;
+      }
+
+      if (view_height_old != view_height || view_width_old != view_width)
+         geometry_update = true;
    }
 
    var.key = "bluemsx_vdp_synctype";
@@ -908,9 +921,9 @@ bool retro_load_game(const struct retro_game_info *info)
       return false;
 
    image_buffer               =  (uint16_t*)malloc(FB_MAX_LINE_WIDTH*FB_MAX_LINES*sizeof(uint16_t));
-   image_buffer_base_width    =  272;
+   image_buffer_base_width    =  MAX_VIEW_WIDTH;
    image_buffer_current_width =  image_buffer_base_width;
-   image_buffer_height        =  240;
+   image_buffer_height        =  MAX_VIEW_HEIGHT;
    double_width = 0;
 
    for (i = 0; i < MAX_PADS; i++)
@@ -1359,12 +1372,13 @@ void retro_run(void)
    boardInfo.run(boardInfo.cpuRef);   
    RETRO_PERFORMANCE_STOP(core_retro_run);
 
-   if (!use_overscan)
-      video_cb(image_buffer + 8 + (image_buffer_current_width * sizeof(uint16_t) * (12 - (msx2_dif / 2))),
-         image_buffer_current_width - 16, image_buffer_height - 48 + (msx2_dif * 2), image_buffer_current_width * sizeof(uint16_t));
-   else
-      video_cb(image_buffer, image_buffer_current_width, image_buffer_height, image_buffer_current_width * sizeof(uint16_t));
-
+   int current_view_width=view_width+(double_width?view_width:0);
+   video_cb(image_buffer + 
+      (image_buffer_current_width-current_view_width)/2 +
+      (image_buffer_current_width * (image_buffer_height-view_height)/2),
+      current_view_width, 
+      view_height,
+      image_buffer_current_width * sizeof(uint16_t));
 }
 
 /* framebuffer */
