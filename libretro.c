@@ -42,25 +42,25 @@
 
 #define CUSTOM_VERSION "+NC38"
 
-retro_log_printf_t log_cb;
-static retro_video_refresh_t video_cb;
-static retro_input_poll_t input_poll_cb;
-static retro_input_state_t input_state_cb;
-static retro_environment_t environ_cb;
+retro_log_printf_t log_cb=NULL;
+static retro_video_refresh_t video_cb=NULL;
+static retro_input_poll_t input_poll_cb=NULL;
+static retro_input_state_t input_state_cb=NULL;
+static retro_environment_t environ_cb=NULL;
 
 static bool libretro_supports_bitmasks = false;
 
-static Properties* properties;
-static Video* video;
-static Mixer* mixer;
+static Properties* properties=NULL;
+static Video* video=NULL;
+static Mixer* mixer=NULL;
 
-static uint16_t* image_buffer;
-static unsigned image_buffer_base_width;
-static unsigned image_buffer_current_width;
-static unsigned image_buffer_height;
+static uint16_t* image_buffer=NULL;
+static unsigned image_buffer_base_width=0;
+static unsigned image_buffer_current_width=0;
+static unsigned image_buffer_height=0;
 static unsigned width = 284;
 static unsigned height = 240;
-static int double_width;
+static int double_width=0;
 
 #define MAX_VIEW_WIDTH 272
 #define MAX_VIEW_HEIGHT 240
@@ -69,10 +69,10 @@ int view_height = MAX_VIEW_HEIGHT;
 
 static char msx_type[256];
 static char msx_cartmapper[256];
-static bool mapper_auto;
-bool is_coleco, is_sega, is_spectra, is_auto, auto_rewind_cas;
-static unsigned msx_vdp_synctype;
-static bool msx_ym2413_enable;
+static bool mapper_auto=false;
+bool is_coleco=false, is_sega=false, is_spectra=false, is_auto=false, auto_rewind_cas=false;
+static unsigned msx_vdp_synctype=0;
+static bool msx_ym2413_enable=false;
 
 AdvancedM3U *am3u=NULL;
 AdvancedM3UDevice *am3u_fd=NULL;
@@ -86,7 +86,7 @@ void retro_set_input_poll(retro_input_poll_t cb) { input_poll_cb = cb; }
 void retro_set_input_state(retro_input_state_t cb) { input_state_cb = cb; }
 
 #ifdef LOG_PERFORMANCE
-static struct retro_perf_callback perf_cb;
+static struct retro_perf_callback perf_cb=NULL;
 #define RETRO_PERFORMANCE_INIT(name) static struct retro_perf_counter name = {#name}; if (!name.registered) perf_cb.perf_register(&(name))
 #define RETRO_PERFORMANCE_START(name) perf_cb.perf_start(&(name))
 #define RETRO_PERFORMANCE_STOP(name) perf_cb.perf_stop(&(name))
