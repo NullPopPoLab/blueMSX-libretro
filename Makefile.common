@@ -25,6 +25,7 @@ INCFLAGS := -I$(CORE_DIR) \
 	    -I$(CORE_DIR)/Src/Z80 \
 	    -I$(CORE_DIR)/Src/Input \
 	    -I$(CORE_DIR)/Src/Libretro \
+	    -I$(DEPS_DIR)/mk5s \
 	    -I$(DEPS_DIR)/zlib
 
 ifneq (,$(findstring msvc2003,$(platform)))
@@ -288,6 +289,12 @@ SOURCES_C  += $(CORE_DIR)/Src/Input/Sg1000JoyIo.c
 SOURCES_C  += $(CORE_DIR)/Src/Input/Sg1000Joystick.c
 SOURCES_C  += $(CORE_DIR)/Src/Input/SviJoyIo.c
 SOURCES_C  += $(CORE_DIR)/Src/Input/SviJoystick.c
+
+SOURCES_C  += $(CORE_DIR)/mk5s/advanced_m3u.c
+SOURCES_C  += $(CORE_DIR)/mk5s/quick_loader.c
+SOURCES_C  += $(CORE_DIR)/mk5s/quick_path.c
+SOURCES_C  += $(CORE_DIR)/mk5s/quick_text.c
+SOURCES_C  += $(CORE_DIR)/mk5s/safe_alloc.c
 
 SOURCES_CXX  := $(CORE_DIR)/Src/SoundChips/Moonsound.cpp \
 		$(CORE_DIR)/Src/Memory/romMapperNoWind.cpp \

@@ -36,6 +36,10 @@
 
 #include "libretro_core_options.h"
 
+#include "mk5s/advanced_m3u.h"
+#include "mk5s/quick_loader.h"
+#include "mk5s/quick_path.h"
+
 #define CUSTOM_VERSION "+NC38"
 
 retro_log_printf_t log_cb;
@@ -67,6 +71,11 @@ static unsigned msx_vdp_synctype;
 static bool msx_ym2413_enable;
 static bool use_overscan = true;
 int msx2_dif = 0;
+
+AdvancedM3U *am3u=NULL;
+AdvancedM3UDevice *am3u_fd=NULL;
+AdvancedM3UDevice *am3u_rom=NULL;
+AdvancedM3UDevice *am3u_cas=NULL;
 
 static void reevaluate_variables_io_sound(bool setToMixer);
 
@@ -212,19 +221,16 @@ int get_media_type(const char* filename)
 /* .dsk swap support */
 struct retro_disk_control_callback dskcb;
 unsigned disk_index = 0;
-unsigned disk_images = 0;
-char disk_paths[10][PATH_MAX];
-bool disk_inserted = false;
 
 bool set_eject_state(bool ejected)
 {
-   disk_inserted = !ejected;
+	am3u_fd->slot_tbl[0]=ejected?-1:disk_index;
    return true;
 }
 
 bool get_eject_state(void)
 {
-   return !disk_inserted;
+   return am3u_fd->slot_tbl[0]<0;
 }
 
 unsigned get_image_index(void)
@@ -236,14 +242,17 @@ bool set_image_index(unsigned index)
 {
    disk_index = index;
    
-   if(disk_index == disk_images)
+   if(disk_index >= am3u_fd->changee_used)
    {
       //retroarch is trying to set "no disk in tray"
       return true;
    }
+
+	const AdvancedM3UMedia* media=&am3u_fd->changee_tbl[disk_index];
+	if(!media->ready)return true;
    
    emulatorSuspend();
-   insertDiskette(properties, 0 /*drive*/, disk_paths[disk_index] /*fname*/, NULL /*inZipFile*/, -1 /*forceAutostart, -1 is force no autostart*/);
+   insertDiskette(properties, 0 /*drive*/, media->path /*fname*/, NULL /*inZipFile*/, -1 /*forceAutostart, -1 is force no autostart*/);
    emulatorResume();
    
    return true;
@@ -251,15 +260,15 @@ bool set_image_index(unsigned index)
 
 unsigned get_num_images(void)
 {
-   return disk_images;
+   return am3u_fd->changee_used;
 }
 
 bool add_image_index(void)
 {
-   if (disk_images >= 10)
+   if (am3u_fd->changee_used >= am3u_fd->changee_max)
       return false;
    
-   disk_images++;
+   am3u_fd->changee_used++;
    return true;
 }
 
@@ -268,8 +277,10 @@ bool replace_image_index(unsigned index,
 {
    if(get_media_type(info->path) != MEDIA_TYPE_DISK)
        return false; /* can't swap a cart or tape into a disk slot */
+
+	AdvancedM3UMedia* media=&am3u_fd->changee_tbl[index];
+	am3u_media_set(media,false,NULL,info->path,NULL);
     
-   strcpy(disk_paths[index], info->path);
    return true;
 }
 
@@ -288,43 +299,33 @@ void attach_disk_swap_interface(void)
 }
 /* end .dsk swap support */
 
+static bool am3u_error(void* user,int code,int lineloc,const QTextRef* line){
+
+	if (!log_cb) return true;
+
+	char* msg=qtext_alloc_q(line);
+
+	  log_cb(RETRO_LOG_ERROR,
+                      "M3U error %d in line %d: %s\n",
+                      code,lineloc,msg);
+	
+	qtext_free(&msg);
+
+	return true;
+}
+
 static bool read_m3u(const char *file)
 {
-   char line[PATH_MAX];
-   char name[PATH_MAX];
-   FILE *f = fopen(file, "r");
+	QLoaded* img=qload(file,false);
+	if(!img)return false;
 
-   if (!f)
-      return false;
-
-   while (fgets(line, sizeof(line), f)
-         && disk_images < 
-         sizeof(disk_paths) / sizeof(disk_paths[0])) 
-   {
-      char *carriage_return = NULL;
-      char *newline         = NULL;
-
-      if (line[0] == '#')
-         continue;
-
-      carriage_return = strchr(line, '\r');
-      if (carriage_return)
-         *carriage_return = '\0';
-
-      newline = strchr(line, '\n');
-      if (newline)
-         *newline = '\0';
-
-      if (line[0] != '\0')
-      {
-         snprintf(name, sizeof(name), "%s%c%s", base_dir, SLASH, line);
-         strcpy(disk_paths[disk_images], name);
-         disk_images++;
-      }
-   }
-
-   fclose(f);
-   return (disk_images != 0);
+	QTextRef imgref;
+	qtext_ref_q(&imgref,(const char*)qloaded_bgn(img),img->readsize);
+	QTextRef m3udir;
+	qpath_dirname_c(&m3udir,file);
+	am3u_setup_q(am3u,&imgref,&m3udir,NULL,am3u_error,NULL);
+	qunload(&img);
+	return true;
 }
 
 extern BoardInfo boardInfo;
@@ -884,9 +885,20 @@ bool retro_load_game(const struct retro_game_info *info)
    for (i = 0; i < MAX_PADS; i++)
       input_devices[i] = RETRO_DEVICE_JOYPAD;
 
+	// AdvancedM3U 
+	am3u=am3u_new();
+	am3u_set_default_device(am3u,'F');
+	am3u_fd=am3u_get_device(am3u,'F');
+	am3u_device_set_changer(am3u_fd,PROP_MAX_DISKS);
+	am3u_device_set_slots(am3u_fd,2);
+	am3u_rom=am3u_get_device(am3u,'R');
+	am3u_device_set_changer(am3u_rom,PROP_MAX_CARTS);
+	am3u_device_set_slots(am3u_rom,2);
+	am3u_cas=am3u_get_device(am3u,'C');
+	am3u_device_set_changer(am3u_cas,PROP_MAX_TAPES);
+	am3u_device_set_slots(am3u_cas,1);
+
    disk_index = 0;
-   disk_images = 0;
-   disk_inserted = false;
    extract_directory(base_dir, info->path, sizeof(base_dir));
 
    check_variables();
@@ -984,13 +996,13 @@ bool retro_load_game(const struct retro_game_info *info)
    else
       mediaDbSetDefaultRomType(mediaDbStringToType(msx_cartmapper));
 
+	QTextRef qpath;
+
    switch(media_type)
    {
       case MEDIA_TYPE_DISK:
-         strcpy(disk_paths[0] , info->path);
-         strcpy(properties->media.disks[0].fileName , info->path);
-         disk_inserted = true;
-         attach_disk_swap_interface();
+		qtext_ref_c(&qpath,info->path);
+		am3u_device_add_media(am3u_fd,(am3u_fd->changee_used<am3u_fd->slot_max)?(1+am3u_fd->changee_used):0,false,NULL,&qpath,NULL);
          break;
       case MEDIA_TYPE_DISK_BUNDLE:
          if (!read_m3u(info->path))
@@ -999,48 +1011,83 @@ bool retro_load_game(const struct retro_game_info *info)
                log_cb(RETRO_LOG_ERROR, "%s\n", "[libretro]: failed to read m3u file ...");
             return false;
          }
-         for (i = 0; (i <= disk_images) && (i <= 1); i++)
-         {
-            strcpy(properties->media.disks[i].fileName , disk_paths[i]);
-         }
-         disk_inserted = true;
-         attach_disk_swap_interface();
          break;
       case MEDIA_TYPE_TAPE:
-         strcpy(properties->media.tapes[0].fileName , info->path);
+		qtext_ref_c(&qpath,info->path);
+		am3u_device_add_media(am3u_cas,(am3u_cas->changee_used<am3u_cas->slot_max)?(1+am3u_cas->changee_used):0,false,NULL,&qpath,NULL);
          break;
       case MEDIA_TYPE_CART:
       case MEDIA_TYPE_OTHER:
       default:
-         strcpy(properties->media.carts[0].fileName , info->path);
+		qtext_ref_c(&qpath,info->path);
+		am3u_device_add_media(am3u_rom,(am3u_rom->changee_used<am3u_fd->slot_max)?(1+am3u_rom->changee_used):0,false,NULL,&qpath,NULL);
          break;
    }
+	attach_disk_swap_interface();
 
-   for (i = 0; i < PROP_MAX_CARTS; i++)
+   for (i = 0; i < am3u_rom->changee_used; i++)
    {
+		const AdvancedM3UMedia* media=&am3u_rom->changee_tbl[i];
+		if(!media->ready)continue;
+		if(log_cb)log_cb(RETRO_LOG_INFO, "Cart %u:%s\n", i,media->path);
+		strncpy(properties->media.carts[i].fileName , media->path, PROP_MAXPATH-1);
+		properties->media.carts[i].fileName[PROP_MAXPATH-1]=0;
+
+      updateExtendedRomName(i, media->path, ""/*properties->media.carts[i].fileNameInZip*/);
+   }
+	for (i = 0; i < am3u_rom->slot_max; i++)
+	{
+		if(am3u_rom->slot_tbl[i]<0)continue;
+		const AdvancedM3UMedia* media=&am3u_rom->changee_tbl[am3u_rom->slot_tbl[i]];
+		if(!media->ready)continue;
+		if(log_cb)log_cb(RETRO_LOG_INFO, "Cart Slot %u:%s\n", i+1,media->path);
+
       /*    Breaks database detection
             if (properties->media.carts[i].fileName[0] && mapper_auto)
             insertCartridge(properties, i, properties->media.carts[i].fileName, properties->media.carts[i].fileNameInZip, properties->media.carts[i].type, -1);
        */
-      if (properties->media.carts[i].fileName[0] && !mapper_auto)
-         insertCartridge(properties, i, properties->media.carts[i].fileName, properties->media.carts[i].fileNameInZip, mediaDbStringToType(msx_cartmapper), -1);
+      if (!mapper_auto)
+         insertCartridge(properties, i, media->path, ""/*properties->media.carts[i].fileNameInZip*/, mediaDbStringToType(msx_cartmapper), -1);
+	}
 
-      updateExtendedRomName(i, properties->media.carts[i].fileName, properties->media.carts[i].fileNameInZip);
-   }
-
-   for (i = 0; i < PROP_MAX_DISKS; i++)
+   for (i = 0; i < am3u_fd->changee_used; i++)
    {
-      if (properties->media.disks[i].fileName[0])
-         insertDiskette(properties, i, properties->media.disks[i].fileName, properties->media.disks[i].fileNameInZip, -1);
-      updateExtendedDiskName(i, properties->media.disks[i].fileName, properties->media.disks[i].fileNameInZip);
-   }
+		const AdvancedM3UMedia* media=&am3u_fd->changee_tbl[i];
+		if(!media->ready)continue;
+		if(log_cb)log_cb(RETRO_LOG_INFO, "Disk %u:%s\n", i,media->path);
+		strncpy(properties->media.disks[i].fileName , media->path, PROP_MAXPATH-1);
+		properties->media.disks[i].fileName[PROP_MAXPATH-1]=0;
 
-   for (i = 0; i < PROP_MAX_TAPES; i++)
-   {
-      if (properties->media.tapes[i].fileName[0])
-         insertCassette(properties, i, properties->media.tapes[i].fileName, properties->media.tapes[i].fileNameInZip, 0);
-      updateExtendedCasName(i, properties->media.tapes[i].fileName, properties->media.tapes[i].fileNameInZip);
+		updateExtendedDiskName(i, media->path, ""/*properties->media.disks[i].fileNameInZip*/);
    }
+	for (i = 0; i < am3u_fd->slot_max; i++)
+	{
+		if(am3u_fd->slot_tbl[i]<0)continue;
+		const AdvancedM3UMedia* media=&am3u_fd->changee_tbl[am3u_fd->slot_tbl[i]];
+		if(!media->ready)continue;
+		if(log_cb)log_cb(RETRO_LOG_INFO, "Disk Slot %u:%s\n", i+1,media->path);
+
+		insertDiskette(properties, i, media->path, ""/*properties->media.disks[i].fileNameInZip*/, -1);
+	}
+
+   for (i = 0; i < am3u_cas->changee_used; i++)
+   {
+		const AdvancedM3UMedia* media=&am3u_cas->changee_tbl[i];
+		if(!media->ready)continue;
+		if(log_cb)log_cb(RETRO_LOG_INFO, "Tape %u:%s\n", i,media->path);
+		strncpy(properties->media.tapes[i].fileName , media->path, PROP_MAXPATH-1);
+		properties->media.tapes[i].fileName[PROP_MAXPATH-1]=0;
+		updateExtendedCasName(i, media->path, ""/*properties->media.tapes[i].fileNameInZip*/);
+   }
+	for (i = 0; i < am3u_cas->slot_max; i++)
+	{
+		if(am3u_cas->slot_tbl[i]<0)continue;
+		const AdvancedM3UMedia* media=&am3u_cas->changee_tbl[am3u_cas->slot_tbl[i]];
+		if(!media->ready)continue;
+		if(log_cb)log_cb(RETRO_LOG_INFO, "Tape Slot %u:%s\n", i+1,media->path);
+
+		insertCassette(properties, i, media->path, ""/*properties->media.tapes[i].fileNameInZip*/, 0);
+	}
 
    {
       Machine* machine = machineCreate(properties->emulation.machineName);
@@ -1303,6 +1350,11 @@ void retro_unload_game(void)
    image_buffer_base_width    = 0;
    image_buffer_current_width = 0;
    image_buffer_height        = 0;
+
+	am3u_fd=NULL;
+	am3u_rom=NULL;
+	am3u_cas=NULL;
+	if(am3u)am3u_free(&am3u);
 }
 
 unsigned retro_get_region(void)
