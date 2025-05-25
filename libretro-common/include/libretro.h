@@ -1329,6 +1329,16 @@ enum retro_mod
                                             * default when calling SET_VARIABLES/SET_CORE_OPTIONS.
                                             */
 
+#define RETRO_ENVIRONMENT_SET_DISK_CONTROL_EXT2_INTERFACE (RETRO_ENVIRONMENT_EXPERIMENTAL|0x9876)
+                                           /* const struct retro_disk_control_ext2_callback * --
+                                            * Sets an interface which frontend can use to eject and insert
+                                            * disk images, and also obtain information about individual
+                                            * disk image files registered by the core.
+                                            * This is used for games which consist of multiple images and
+                                            * must be manually swapped out by the user (e.g. PSX, floppy disk
+                                            * based systems).
+                                            */
+
 /* VFS functionality */
 
 /* File paths:
@@ -2387,14 +2397,18 @@ struct retro_keyboard_callback
  * When ejected, the disk image index can be set.
  */
 typedef bool (RETRO_CALLCONV *retro_set_eject_state_t)(bool ejected);
+typedef bool (RETRO_CALLCONV *retro_set_drive_eject_state_t)(unsigned drive, bool ejected);
 
 /* Gets current eject state. The initial state is 'not ejected'. */
 typedef bool (RETRO_CALLCONV *retro_get_eject_state_t)(void);
+typedef bool (RETRO_CALLCONV *retro_get_drive_eject_state_t)(unsigned drive);
 
 /* Gets current disk index. First disk is index 0.
  * If return value is >= get_num_images(), no disk is currently inserted.
  */
 typedef unsigned (RETRO_CALLCONV *retro_get_image_index_t)(void);
+/* Gets drive inserted disk index. (-1 means ejected) */
+typedef int (RETRO_CALLCONV *retro_get_drive_image_index_t)(unsigned drive);
 
 /* Sets image index. Can only be called when disk is ejected.
  * The implementation supports setting "no disk" by using an
@@ -2404,6 +2418,9 @@ typedef bool (RETRO_CALLCONV *retro_set_image_index_t)(unsigned index);
 
 /* Gets total number of images which are available to use. */
 typedef unsigned (RETRO_CALLCONV *retro_get_num_images_t)(void);
+
+/* Gets total number of disk drives which are available to use. */
+typedef unsigned (RETRO_CALLCONV *retro_get_num_drives_t)(void);
 
 struct retro_game_info;
 
@@ -2428,6 +2445,53 @@ typedef bool (RETRO_CALLCONV *retro_replace_image_index_t)(unsigned index,
  * with replace_image_index. */
 typedef bool (RETRO_CALLCONV *retro_add_image_index_t)(void);
 
+/* Sets initial image to insert in drive when calling
+ * core_load_game().
+ * Since we cannot pass the initial index when loading
+ * content (this would require a major API change), this
+ * is set by the frontend *before* calling the core's
+ * retro_load_game()/retro_load_game_special() implementation.
+ * A core should therefore cache the index/path values and handle
+ * them inside retro_load_game()/retro_load_game_special().
+ * - If 'index' is invalid (index >= get_num_images()), the
+ *   core should ignore the set value and instead use 0
+ * - 'path' is used purely for error checking - i.e. when
+ *   content is loaded, the core should verify that the
+ *   disk specified by 'index' has the specified file path.
+ *   This is to guard against auto selecting the wrong image
+ *   if (for example) the user should modify an existing M3U
+ *   playlist. We have to let the core handle this because
+ *   set_initial_image() must be called before loading content,
+ *   i.e. the frontend cannot access image paths in advance
+ *   and thus cannot perform the error check itself.
+ *   If set path and content path do not match, the core should
+ *   ignore the set 'index' value and instead use 0
+ * Returns 'false' if index or 'path' are invalid, or core
+ * does not support this functionality
+ */
+typedef bool (RETRO_CALLCONV *retro_set_initial_image_t)(unsigned index, const char *path);
+
+/* Fetches the path of the specified disk image file.
+ * Returns 'false' if index is invalid (index >= get_num_images())
+ * or path is otherwise unavailable.
+ */
+typedef bool (RETRO_CALLCONV *retro_get_image_path_t)(unsigned index, char *path, size_t len);
+
+/* Fetches a core-provided 'label' for the specified disk
+ * image file. In the simplest case this may be a file name
+ * (without extension), but for cores with more complex
+ * content requirements information may be provided to
+ * facilitate user disk swapping - for example, a core
+ * running floppy-disk-based content may uniquely label
+ * save disks, data disks, level disks, etc. with names
+ * corresponding to in-game disk change prompts (so the
+ * frontend can provide better user guidance than a 'dumb'
+ * disk index value).
+ * Returns 'false' if index is invalid (index >= get_num_images())
+ * or label is otherwise unavailable.
+ */
+typedef bool (RETRO_CALLCONV *retro_get_image_label_t)(unsigned index, char *label, size_t len);
+
 struct retro_disk_control_callback
 {
    retro_set_eject_state_t set_eject_state;
@@ -2440,6 +2504,100 @@ struct retro_disk_control_callback
    retro_replace_image_index_t replace_image_index;
    retro_add_image_index_t add_image_index;
 };
+
+struct retro_disk_control_ext_callback
+{
+   retro_set_eject_state_t set_eject_state;
+   retro_get_eject_state_t get_eject_state;
+
+   retro_get_image_index_t get_image_index;
+   retro_set_image_index_t set_image_index;
+   retro_get_num_images_t  get_num_images;
+
+   retro_replace_image_index_t replace_image_index;
+   retro_add_image_index_t add_image_index;
+
+   /* NOTE: Frontend will only attempt to record/restore
+    * last used disk index if both set_initial_image()
+    * and get_image_path() are implemented */
+   retro_set_initial_image_t set_initial_image; /* Optional - may be NULL */
+
+   retro_get_image_path_t get_image_path;       /* Optional - may be NULL */
+   retro_get_image_label_t get_image_label;     /* Optional - may be NULL */
+};
+
+struct retro_disk_control_ext2_callback
+{
+   retro_set_eject_state_t set_eject_state;
+   retro_get_eject_state_t get_eject_state;
+
+   retro_get_image_index_t get_image_index;
+   retro_set_image_index_t set_image_index;
+   retro_get_num_images_t  get_num_images;
+
+   retro_replace_image_index_t replace_image_index;
+   retro_add_image_index_t add_image_index;
+
+   /* NOTE: Frontend will only attempt to record/restore
+    * last used disk index if both set_initial_image()
+    * and get_image_path() are implemented */
+   retro_set_initial_image_t set_initial_image; /* Optional - may be NULL */
+
+   retro_get_image_path_t get_image_path;       /* Optional - may be NULL */
+   retro_get_image_label_t get_image_label;     /* Optional - may be NULL */
+
+   retro_get_num_drives_t get_num_drives;     /* Optional - may be NULL */
+   retro_set_drive_eject_state_t set_drive_eject_state;     /* Optional - may be NULL */
+   retro_get_drive_eject_state_t get_drive_eject_state;     /* Optional - may be NULL */
+   retro_get_drive_image_index_t get_drive_image_index;     /* Optional - may be NULL */
+};
+
+/* Sets initial image to insert in drive when calling
+ * core_load_game().
+ * Since we cannot pass the initial index when loading
+ * content (this would require a major API change), this
+ * is set by the frontend *before* calling the core's
+ * retro_load_game()/retro_load_game_special() implementation.
+ * A core should therefore cache the index/path values and handle
+ * them inside retro_load_game()/retro_load_game_special().
+ * - If 'index' is invalid (index >= get_num_images()), the
+ *   core should ignore the set value and instead use 0
+ * - 'path' is used purely for error checking - i.e. when
+ *   content is loaded, the core should verify that the
+ *   disk specified by 'index' has the specified file path.
+ *   This is to guard against auto selecting the wrong image
+ *   if (for example) the user should modify an existing M3U
+ *   playlist. We have to let the core handle this because
+ *   set_initial_image() must be called before loading content,
+ *   i.e. the frontend cannot access image paths in advance
+ *   and thus cannot perform the error check itself.
+ *   If set path and content path do not match, the core should
+ *   ignore the set 'index' value and instead use 0
+ * Returns 'false' if index or 'path' are invalid, or core
+ * does not support this functionality
+ */
+typedef bool (RETRO_CALLCONV *retro_set_initial_image_t)(unsigned index, const char *path);
+
+/* Fetches the path of the specified disk image file.
+ * Returns 'false' if index is invalid (index >= get_num_images())
+ * or path is otherwise unavailable.
+ */
+typedef bool (RETRO_CALLCONV *retro_get_image_path_t)(unsigned index, char *path, size_t len);
+
+/* Fetches a core-provided 'label' for the specified disk
+ * image file. In the simplest case this may be a file name
+ * (without extension), but for cores with more complex
+ * content requirements information may be provided to
+ * facilitate user disk swapping - for example, a core
+ * running floppy-disk-based content may uniquely label
+ * save disks, data disks, level disks, etc. with names
+ * corresponding to in-game disk change prompts (so the
+ * frontend can provide better user guidance than a 'dumb'
+ * disk index value).
+ * Returns 'false' if index is invalid (index >= get_num_images())
+ * or label is otherwise unavailable.
+ */
+typedef bool (RETRO_CALLCONV *retro_get_image_label_t)(unsigned index, char *label, size_t len);
 
 enum retro_pixel_format
 {

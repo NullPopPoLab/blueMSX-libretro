@@ -219,18 +219,34 @@ int get_media_type(const char* filename)
 
 /* end .dsk support */
 /* .dsk swap support */
-struct retro_disk_control_callback dskcb;
+struct retro_disk_control_ext2_callback dskcb;
 unsigned disk_index = 0;
 
-bool set_eject_state(bool ejected)
+bool set_drive_eject_state(unsigned drive, bool ejected)
 {
-	am3u_fd->slot_tbl[0]=ejected?-1:disk_index;
-   return true;
+	bool ret=true;
+	if(ejected){
+		am3u_fd->slot_tbl[drive]=-1;
+	}
+	else{
+		const AdvancedM3UMedia* media=&am3u_fd->changee_tbl[disk_index];
+
+	   emulatorSuspend();
+	   ret=insertDiskette(properties, drive, media->path, NULL, -1);
+	   emulatorResume();
+		if(ret){
+			am3u_fd->slot_tbl[drive]=disk_index;
+		}
+//		else{
+//			am3u_fd->slot_tbl[drive]=-1;
+//		}
+	}
+	return ret;
 }
 
-bool get_eject_state(void)
+static bool get_drive_eject_state(unsigned drive)
 {
-   return am3u_fd->slot_tbl[0]<0;
+   return am3u_fd->slot_tbl[drive]<0;
 }
 
 unsigned get_image_index(void)
@@ -241,26 +257,17 @@ unsigned get_image_index(void)
 bool set_image_index(unsigned index)
 {
    disk_index = index;
-   
-   if(disk_index >= am3u_fd->changee_used)
-   {
-      //retroarch is trying to set "no disk in tray"
-      return true;
-   }
-
-	const AdvancedM3UMedia* media=&am3u_fd->changee_tbl[disk_index];
-	if(!media->ready)return true;
-   
-   emulatorSuspend();
-   insertDiskette(properties, 0 /*drive*/, media->path /*fname*/, NULL /*inZipFile*/, -1 /*forceAutostart, -1 is force no autostart*/);
-   emulatorResume();
-   
    return true;
 }
 
 unsigned get_num_images(void)
 {
    return am3u_fd->changee_used;
+}
+
+static unsigned get_num_drives(void)
+{
+   return PROP_MAX_DISKS;
 }
 
 bool add_image_index(void)
@@ -284,18 +291,42 @@ bool replace_image_index(unsigned index,
    return true;
 }
 
+static bool disk_get_image_label(unsigned index, char *label, size_t len)
+{
+   if (len < 1)
+      return false;
+
+	const AdvancedM3UMedia* media=&am3u_fd->changee_tbl[index];
+	if(!media->ready)return false;
+
+	strncpy(label, media->label, len);
+	return true;
+}
+
+static int disk_get_drive_image_index(unsigned drive)
+{
+	if(drive>=get_num_drives())return -1;
+	if(get_drive_eject_state(drive))return -1;
+	return am3u_fd->slot_tbl[drive];	
+}
+
 void attach_disk_swap_interface(void)
 {
    /* these functions are unused */
-   dskcb.set_eject_state = set_eject_state;
-   dskcb.get_eject_state = get_eject_state;
+   dskcb.set_drive_eject_state = set_drive_eject_state;
+   dskcb.get_drive_eject_state = get_drive_eject_state;
    dskcb.set_image_index = set_image_index;
    dskcb.get_image_index = get_image_index;
+   dskcb.get_num_drives  = get_num_drives;
    dskcb.get_num_images  = get_num_images;
    dskcb.add_image_index = add_image_index;
    dskcb.replace_image_index = replace_image_index;
+   dskcb.set_initial_image = NULL;
+   dskcb.get_image_path = NULL;
+   dskcb.get_image_label = disk_get_image_label;
+   dskcb.get_drive_image_index = disk_get_drive_image_index;
 
-   environ_cb(RETRO_ENVIRONMENT_SET_DISK_CONTROL_INTERFACE, &dskcb);
+   environ_cb(RETRO_ENVIRONMENT_SET_DISK_CONTROL_EXT2_INTERFACE, &dskcb);
 }
 /* end .dsk swap support */
 
@@ -1035,6 +1066,10 @@ bool retro_load_game(const struct retro_game_info *info)
 
       updateExtendedRomName(i, media->path, ""/*properties->media.carts[i].fileNameInZip*/);
    }
+	if(am3u_rom->slot_tbl[0]<0 && am3u_rom->slot_tbl[1]<0){
+		if(am3u_rom->changee_used>0)am3u_rom->slot_tbl[0]=0;
+		if(am3u_rom->changee_used>1)am3u_rom->slot_tbl[1]=1;
+	}
 	for (i = 0; i < am3u_rom->slot_max; i++)
 	{
 		if(am3u_rom->slot_tbl[i]<0)continue;
@@ -1060,6 +1095,9 @@ bool retro_load_game(const struct retro_game_info *info)
 
 		updateExtendedDiskName(i, media->path, ""/*properties->media.disks[i].fileNameInZip*/);
    }
+	if(am3u_fd->slot_tbl[0]<0){
+		if(am3u_fd->changee_used>0)am3u_fd->slot_tbl[0]=0;
+	}
 	for (i = 0; i < am3u_fd->slot_max; i++)
 	{
 		if(am3u_fd->slot_tbl[i]<0)continue;
@@ -1079,6 +1117,9 @@ bool retro_load_game(const struct retro_game_info *info)
 		properties->media.tapes[i].fileName[PROP_MAXPATH-1]=0;
 		updateExtendedCasName(i, media->path, ""/*properties->media.tapes[i].fileNameInZip*/);
    }
+	if(am3u_cas->slot_tbl[0]<0){
+		if(am3u_cas->changee_used>0)am3u_cas->slot_tbl[0]=0;
+	}
 	for (i = 0; i < am3u_cas->slot_max; i++)
 	{
 		if(am3u_cas->slot_tbl[i]<0)continue;
