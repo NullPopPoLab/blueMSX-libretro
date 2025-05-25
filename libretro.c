@@ -1125,7 +1125,7 @@ void retro_run(void)
 {
    int i,j;
    bool updated = false;
-   int16_t joypad_bits[MAX_PADS] = {0};
+   int32_t joypad_bits[MAX_PADS] = {0};
    
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) && updated)
       check_variables();
@@ -1145,7 +1145,7 @@ void retro_run(void)
       for (i = 0; i < MAX_PADS; i++)
       {
          joypad_bits[i] = 0;
-         for (j = 0; j < (RETRO_DEVICE_ID_JOYPAD_R3+1); j++)
+         for (j = 0; j < RETRO_DEVICE_ID_JOYPAD_BUTTON_MAX; j++)
             joypad_bits[i] |= input_state_cb(i, RETRO_DEVICE_JOYPAD, 0, j) ? (1 << j) : 0;
       }
    }
