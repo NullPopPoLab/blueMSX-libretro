@@ -378,9 +378,9 @@ static unsigned btn_map[EC_KEYCOUNT] =
    RETROK_F3,              //EC_F3        3
    RETROK_F4,              //EC_F4        4
    RETROK_F5,              //EC_F5        5
-   RETROK_END,             //EC_STOP      6
+   RETROK_BREAK,           //EC_STOP      6
    RETROK_HOME,            //EC_CLS       7
-   RETROK_PAGEUP,          //EC_SELECT    8
+   RETROK_END,             //EC_SELECT    8
    RETROK_INSERT,          //EC_INS       9
    RETROK_DELETE,          //EC_DEL      10
 
@@ -397,8 +397,8 @@ static unsigned btn_map[EC_KEYCOUNT] =
    RETROK_9,               //EC_9        20
    RETROK_0,               //EC_0        21
    RETROK_MINUS,           //EC_NEG      22
-   RETROK_EQUALS,          //EC_CIRCFLX  23
-   RETROK_BACKSLASH,       //EC_BKSLASH  24 (YEN)
+   RETROK_EQUALS,           //EC_CIRCFLX  23 (ToDo: RETROK_CARET in JP keyboard)
+   RETROK_YEN,             //EC_BKSLASH  24 (YEN)
    RETROK_BACKSPACE,       //EC_BKSPACE  25
 
    // ROW 2
@@ -413,8 +413,8 @@ static unsigned btn_map[EC_KEYCOUNT] =
    RETROK_i,               //EC_I        34
    RETROK_o,               //EC_O        35
    RETROK_p,               //EC_P        36
-   RETROK_BACKQUOTE,       //EC_AT       37
-   RETROK_LEFTBRACKET,     //EC_LBRACK   38
+   RETROK_LEFTBRACKET,     //EC_AT       37 (ToDo: RETROK_AT in JP keyboard)
+   RETROK_RIGHTBRACKET,    //EC_LBRACK   38 (ToDo: RETROK_LEFTBRACKET in JP keyboard)
    RETROK_RETURN,          //EC_RETURN   39
 
    // ROW 3
@@ -429,8 +429,8 @@ static unsigned btn_map[EC_KEYCOUNT] =
    RETROK_k,               //EC_K        48
    RETROK_l,               //EC_L        49
    RETROK_SEMICOLON,       //EC_SEMICOL  50
-   RETROK_QUOTE,           //EC_COLON    51
-   RETROK_RIGHTBRACKET,    //EC_RBRACK   52
+   RETROK_QUOTE,           //EC_COLON    51 (ToDo: RETROK_COLON in JP keyboard)
+   RETROK_BACKSLASH,       //EC_RBRACK   52 (ToDo: RETROK_RIGHTBRACKET in JP keyboard)
 
    // ROW 4
    RETROK_LSHIFT,          //EC_LSHIFT   53
@@ -444,17 +444,17 @@ static unsigned btn_map[EC_KEYCOUNT] =
    RETROK_COMMA,           //EC_COMMA    61
    RETROK_PERIOD,          //EC_PERIOD   62
    RETROK_SLASH,           //EC_DIV      63
-   RETROK_UNDERSCORE,      //EC_UNDSCRE  64 (as Shift+0)
+   RETROK_RCTRL,           //EC_UNDSCRE  64 (as Shift+0) (ToDo: RETROK_BACKSLASH in JP keyboard)
    RETROK_RSHIFT,          //EC_RSHIFT   65
 
    // ROW 5
    RETROK_CAPSLOCK,        //EC_CAPS     66
    RETROK_LALT,            //EC_GRAPH    67
-   RETROK_CANCEL,          //EC_TORIKE   68
+   RETROK_DONTCONV,        //EC_TORIKE   68
    RETROK_SPACE,           //EC_SPACE    69
-   RETROK_EXEC,            //EC_JIKKOU   70
-   RETROK_KANA,            //EC_CODE     71
-   RETROK_PAUSE,           //EC_PAUSE    72
+   RETROK_CONVERT,         //EC_JIKKOU   70
+   RETROK_KATAHIRA,        //EC_CODE     71
+   RETROK_COMPOSE,         //EC_PAUSE    72
 
    // ARROWS
    RETROK_LEFT,            //EC_LEFT     73
@@ -476,8 +476,8 @@ static unsigned btn_map[EC_KEYCOUNT] =
    RETROK_KP3,             //EC_NUM3     87
    RETROK_KP_MINUS,        //EC_NUMSUB   88
    RETROK_KP0,             //EC_NUM0     89
-   RETROK_KP_ENTER,        //EC_NUMPER   90
-   RETROK_KP_PERIOD,       //EC_NUMCOM   91
+   RETROK_KP_PERIOD,       //EC_NUMPER   90
+   RETROK_KP_ENTER,        //EC_NUMCOM   91
    RETROK_KP_PLUS,         //EC_NUMADD   92
 
    // SVI SPECIFIC KEYS
@@ -1275,48 +1275,60 @@ void retro_run(void)
          eventMap[j] = input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, btn_map[j]) ? 1 : 0;
 
 			switch(btn_map[j]){
+				case RETROK_BREAK:
+				eventMap[j] |= input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_PAUSE) ? 1 : 0;
+				break;
+
 				case RETROK_KP1:
-				if(input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_KP123) &&
-					input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_KP147))eventMap[j] = 1;
+				eventMap[j] |= (
+					input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_KP123) &&
+					input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_KP147) )? 1 : 0;
 				break;
 
 				case RETROK_KP2:
-				if(input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_KP123) &&
-					!input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_KP147) && 
-					!input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_KP369))eventMap[j] = 1;
+				eventMap[j] |= (
+					input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_KP123) &&
+					!input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_KP147) &&
+					!input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_KP369) )? 1 : 0;
 				break;
 
 				case RETROK_KP3:
-				if(input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_KP123) &&
-					input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_KP369))eventMap[j] = 1;
+				eventMap[j] |= (
+					input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_KP123) &&
+					input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_KP369) )? 1 : 0;
 				break;
 
 				case RETROK_KP4:
-				if(input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_KP147) &&
-					!input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_KP123) && 
-					!input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_KP789))eventMap[j] = 1;
+				eventMap[j] |= (
+					input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_KP147) &&
+					!input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_KP123) &&
+					!input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_KP789) )? 1 : 0;
 				break;
 
 				case RETROK_KP6:
-				if(input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_KP369) &&
-					!input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_KP123) && 
-					!input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_KP789))eventMap[j] = 1;
+				eventMap[j] |= (
+					input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_KP369) &&
+					!input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_KP123) &&
+					!input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_KP789) )? 1 : 0;
 				break;
 
 				case RETROK_KP7:
-				if(input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_KP789) &&
-					input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_KP147))eventMap[j] = 1;
+				eventMap[j] |= (
+					input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_KP789) &&
+					input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_KP147) )? 1 : 0;
 				break;
 
 				case RETROK_KP8:
-				if(input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_KP789) &&
-					!input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_KP147) && 
-					!input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_KP369))eventMap[j] = 1;
+				eventMap[j] |= (
+					input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_KP789) &&
+					!input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_KP147) &&
+					!input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_KP369) )? 1 : 0;
 				break;
 
 				case RETROK_KP9:
-				if(input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_KP789) &&
-					input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_KP369))eventMap[j] = 1;
+				eventMap[j] |= (
+					input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_KP789) &&
+					input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, RETROK_KP369) )? 1 : 0;
 				break;
 			}
 		}
