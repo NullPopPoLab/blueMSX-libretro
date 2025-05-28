@@ -397,7 +397,7 @@ static unsigned btn_map[EC_KEYCOUNT] =
    RETROK_9,               //EC_9        20
    RETROK_0,               //EC_0        21
    RETROK_MINUS,           //EC_NEG      22
-   RETROK_EQUALS,           //EC_CIRCFLX  23 (ToDo: RETROK_CARET in JP keyboard)
+   RETROK_EQUALS,          //EC_CIRCFLX  23 (ToDo: RETROK_CARET in JP keyboard)
    RETROK_YEN,             //EC_BKSLASH  24 (YEN)
    RETROK_BACKSPACE,       //EC_BKSPACE  25
 
