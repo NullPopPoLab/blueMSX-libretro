@@ -42,35 +42,37 @@
 
 #define CUSTOM_VERSION "+NC38"
 
-retro_log_printf_t log_cb;
-static retro_video_refresh_t video_cb;
-static retro_input_poll_t input_poll_cb;
-static retro_input_state_t input_state_cb;
-static retro_environment_t environ_cb;
+retro_log_printf_t log_cb=NULL;
+static retro_video_refresh_t video_cb=NULL;
+static retro_input_poll_t input_poll_cb=NULL;
+static retro_input_state_t input_state_cb=NULL;
+static retro_environment_t environ_cb=NULL;
 
 static bool libretro_supports_bitmasks = false;
 
-static Properties* properties;
-static Video* video;
-static Mixer* mixer;
+static Properties* properties=NULL;
+static Video* video=NULL;
+static Mixer* mixer=NULL;
 
-static uint16_t* image_buffer;
-static unsigned image_buffer_base_width;
-static unsigned image_buffer_current_width;
-static unsigned image_buffer_height;
+static uint16_t* image_buffer=NULL;
+static unsigned image_buffer_base_width=0;
+static unsigned image_buffer_current_width=0;
+static unsigned image_buffer_height=0;
 static unsigned width = 284;
 static unsigned height = 240;
-static int double_width;
+static int double_width=0;
 
+#define MAX_VIEW_WIDTH 272
+#define MAX_VIEW_HEIGHT 240
+int view_width = MAX_VIEW_WIDTH;
+int view_height = MAX_VIEW_HEIGHT;
 
 static char msx_type[256];
 static char msx_cartmapper[256];
-static bool mapper_auto;
-bool is_coleco, is_sega, is_spectra, is_auto, auto_rewind_cas;
-static unsigned msx_vdp_synctype;
-static bool msx_ym2413_enable;
-static bool use_overscan = true;
-int msx2_dif = 0;
+static bool mapper_auto=false;
+bool is_coleco=false, is_sega=false, is_spectra=false, is_auto=false, auto_rewind_cas=false;
+static unsigned msx_vdp_synctype=0;
+static bool msx_ym2413_enable=false;
 
 AdvancedM3U *am3u=NULL;
 AdvancedM3UDevice *am3u_fd=NULL;
@@ -84,7 +86,7 @@ void retro_set_input_poll(retro_input_poll_t cb) { input_poll_cb = cb; }
 void retro_set_input_state(retro_input_state_t cb) { input_state_cb = cb; }
 
 #ifdef LOG_PERFORMANCE
-static struct retro_perf_callback perf_cb;
+static struct retro_perf_callback perf_cb=NULL;
 #define RETRO_PERFORMANCE_INIT(name) static struct retro_perf_counter name = {#name}; if (!name.registered) perf_cb.perf_register(&(name))
 #define RETRO_PERFORMANCE_START(name) perf_cb.perf_start(&(name))
 #define RETRO_PERFORMANCE_STOP(name) perf_cb.perf_stop(&(name))
@@ -219,18 +221,34 @@ int get_media_type(const char* filename)
 
 /* end .dsk support */
 /* .dsk swap support */
-struct retro_disk_control_callback dskcb;
+struct retro_disk_control_ext2_callback dskcb;
 unsigned disk_index = 0;
 
-bool set_eject_state(bool ejected)
+bool set_drive_eject_state(unsigned drive, bool ejected)
 {
-	am3u_fd->slot_tbl[0]=ejected?-1:disk_index;
-   return true;
+	bool ret=true;
+	if(ejected){
+		am3u_fd->slot_tbl[drive]=-1;
+	}
+	else{
+		const AdvancedM3UMedia* media=&am3u_fd->changee_tbl[disk_index];
+
+	   emulatorSuspend();
+	   ret=insertDiskette(properties, drive, media->path, NULL, -1);
+	   emulatorResume();
+		if(ret){
+			am3u_fd->slot_tbl[drive]=disk_index;
+		}
+//		else{
+//			am3u_fd->slot_tbl[drive]=-1;
+//		}
+	}
+	return ret;
 }
 
-bool get_eject_state(void)
+static bool get_drive_eject_state(unsigned drive)
 {
-   return am3u_fd->slot_tbl[0]<0;
+   return am3u_fd->slot_tbl[drive]<0;
 }
 
 unsigned get_image_index(void)
@@ -241,26 +259,17 @@ unsigned get_image_index(void)
 bool set_image_index(unsigned index)
 {
    disk_index = index;
-   
-   if(disk_index >= am3u_fd->changee_used)
-   {
-      //retroarch is trying to set "no disk in tray"
-      return true;
-   }
-
-	const AdvancedM3UMedia* media=&am3u_fd->changee_tbl[disk_index];
-	if(!media->ready)return true;
-   
-   emulatorSuspend();
-   insertDiskette(properties, 0 /*drive*/, media->path /*fname*/, NULL /*inZipFile*/, -1 /*forceAutostart, -1 is force no autostart*/);
-   emulatorResume();
-   
    return true;
 }
 
 unsigned get_num_images(void)
 {
    return am3u_fd->changee_used;
+}
+
+static unsigned get_num_drives(void)
+{
+   return PROP_MAX_DISKS;
 }
 
 bool add_image_index(void)
@@ -284,18 +293,42 @@ bool replace_image_index(unsigned index,
    return true;
 }
 
+static bool disk_get_image_label(unsigned index, char *label, size_t len)
+{
+   if (len < 1)
+      return false;
+
+	const AdvancedM3UMedia* media=&am3u_fd->changee_tbl[index];
+	if(!media->ready)return false;
+
+	strncpy(label, media->label, len);
+	return true;
+}
+
+static int disk_get_drive_image_index(unsigned drive)
+{
+	if(drive>=get_num_drives())return -1;
+	if(get_drive_eject_state(drive))return -1;
+	return am3u_fd->slot_tbl[drive];	
+}
+
 void attach_disk_swap_interface(void)
 {
    /* these functions are unused */
-   dskcb.set_eject_state = set_eject_state;
-   dskcb.get_eject_state = get_eject_state;
+   dskcb.set_drive_eject_state = set_drive_eject_state;
+   dskcb.get_drive_eject_state = get_drive_eject_state;
    dskcb.set_image_index = set_image_index;
    dskcb.get_image_index = get_image_index;
+   dskcb.get_num_drives  = get_num_drives;
    dskcb.get_num_images  = get_num_images;
    dskcb.add_image_index = add_image_index;
    dskcb.replace_image_index = replace_image_index;
+   dskcb.set_initial_image = NULL;
+   dskcb.get_image_path = NULL;
+   dskcb.get_image_label = disk_get_image_label;
+   dskcb.get_drive_image_index = disk_get_drive_image_index;
 
-   environ_cb(RETRO_ENVIRONMENT_SET_DISK_CONTROL_INTERFACE, &dskcb);
+   environ_cb(RETRO_ENVIRONMENT_SET_DISK_CONTROL_EXT2_INTERFACE, &dskcb);
 }
 /* end .dsk swap support */
 
@@ -521,10 +554,8 @@ void retro_get_system_info(struct retro_system_info *info)
 
 void retro_get_system_av_info(struct retro_system_av_info *info)
 {
-    width  = use_overscan ? 272 : (272 - 16);
-    height = use_overscan ? 240 : (240 - 48 + (msx2_dif * 2));
-   info->geometry.base_width = width ;
-   info->geometry.base_height = height ;
+   info->geometry.base_width = width = view_width;
+   info->geometry.base_height = height = view_height;
    info->geometry.max_width = FB_MAX_LINE_WIDTH ;
    info->geometry.max_height = FB_MAX_LINES ;
    info->geometry.aspect_ratio = 0;
@@ -739,22 +770,35 @@ static void check_variables(void)
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
    {
-      bool newval = (!strcmp(var.value, "disabled"));
-      int msx2_dif_old = msx2_dif;
+      int view_width_old = view_width;
+      int view_height_old = view_height;
 
-      if (!strcmp(var.value, "MSX2"))
-         msx2_dif = 10;
-      else
-         msx2_dif = 0;
-
-      if (msx2_dif_old != msx2_dif)
-         geometry_update = true;
-
-      if (newval != use_overscan)
-      {
-         use_overscan = newval;
-         geometry_update = true;
+      // [CAUTION] 
+      // bluemsx_overscan means "use cropping" 
+      // and "disabled" means "use overscan" 
+      if (!strcmp(var.value, "disabled")){
+          view_width = MAX_VIEW_WIDTH;
+          view_height = MAX_VIEW_HEIGHT;
       }
+      else if (!strcmp(var.value, "fullborder")){
+          view_width = 272;
+          view_height = 228;
+      }
+      else if (!strcmp(var.value, "sideborder")){
+          view_width = 272;
+          view_height = 212;
+      }
+      else if (!strcmp(var.value, "MSX2")){
+          view_width = 256;
+          view_height = 212;
+      }
+      else{
+          view_width = 256;
+          view_height = 192;
+      }
+
+      if (view_height_old != view_height || view_width_old != view_width)
+         geometry_update = true;
    }
 
    var.key = "bluemsx_vdp_synctype";
@@ -877,9 +921,9 @@ bool retro_load_game(const struct retro_game_info *info)
       return false;
 
    image_buffer               =  (uint16_t*)malloc(FB_MAX_LINE_WIDTH*FB_MAX_LINES*sizeof(uint16_t));
-   image_buffer_base_width    =  272;
+   image_buffer_base_width    =  MAX_VIEW_WIDTH;
    image_buffer_current_width =  image_buffer_base_width;
-   image_buffer_height        =  240;
+   image_buffer_height        =  MAX_VIEW_HEIGHT;
    double_width = 0;
 
    for (i = 0; i < MAX_PADS; i++)
@@ -1035,6 +1079,10 @@ bool retro_load_game(const struct retro_game_info *info)
 
       updateExtendedRomName(i, media->path, ""/*properties->media.carts[i].fileNameInZip*/);
    }
+	if(am3u_rom->slot_tbl[0]<0 && am3u_rom->slot_tbl[1]<0){
+		if(am3u_rom->changee_used>0)am3u_rom->slot_tbl[0]=0;
+		if(am3u_rom->changee_used>1)am3u_rom->slot_tbl[1]=1;
+	}
 	for (i = 0; i < am3u_rom->slot_max; i++)
 	{
 		if(am3u_rom->slot_tbl[i]<0)continue;
@@ -1060,6 +1108,9 @@ bool retro_load_game(const struct retro_game_info *info)
 
 		updateExtendedDiskName(i, media->path, ""/*properties->media.disks[i].fileNameInZip*/);
    }
+	if(am3u_fd->slot_tbl[0]<0){
+		if(am3u_fd->changee_used>0)am3u_fd->slot_tbl[0]=0;
+	}
 	for (i = 0; i < am3u_fd->slot_max; i++)
 	{
 		if(am3u_fd->slot_tbl[i]<0)continue;
@@ -1079,6 +1130,9 @@ bool retro_load_game(const struct retro_game_info *info)
 		properties->media.tapes[i].fileName[PROP_MAXPATH-1]=0;
 		updateExtendedCasName(i, media->path, ""/*properties->media.tapes[i].fileNameInZip*/);
    }
+	if(am3u_cas->slot_tbl[0]<0){
+		if(am3u_cas->changee_used>0)am3u_cas->slot_tbl[0]=0;
+	}
 	for (i = 0; i < am3u_cas->slot_max; i++)
 	{
 		if(am3u_cas->slot_tbl[i]<0)continue;
@@ -1125,7 +1179,7 @@ void retro_run(void)
 {
    int i,j;
    bool updated = false;
-   int16_t joypad_bits[MAX_PADS] = {0};
+   int32_t joypad_bits[MAX_PADS] = {0};
    
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) && updated)
       check_variables();
@@ -1145,7 +1199,7 @@ void retro_run(void)
       for (i = 0; i < MAX_PADS; i++)
       {
          joypad_bits[i] = 0;
-         for (j = 0; j < (RETRO_DEVICE_ID_JOYPAD_R3+1); j++)
+         for (j = 0; j < RETRO_DEVICE_ID_JOYPAD_BUTTON_MAX; j++)
             joypad_bits[i] |= input_state_cb(i, RETRO_DEVICE_JOYPAD, 0, j) ? (1 << j) : 0;
       }
    }
@@ -1330,12 +1384,13 @@ void retro_run(void)
    boardInfo.run(boardInfo.cpuRef);   
    RETRO_PERFORMANCE_STOP(core_retro_run);
 
-   if (!use_overscan)
-      video_cb(image_buffer + 8 + (image_buffer_current_width * sizeof(uint16_t) * (12 - (msx2_dif / 2))),
-         image_buffer_current_width - 16, image_buffer_height - 48 + (msx2_dif * 2), image_buffer_current_width * sizeof(uint16_t));
-   else
-      video_cb(image_buffer, image_buffer_current_width, image_buffer_height, image_buffer_current_width * sizeof(uint16_t));
-
+   int current_view_width=view_width+(double_width?view_width:0);
+   video_cb(image_buffer + 
+      (image_buffer_current_width-current_view_width)/2 +
+      (image_buffer_current_width * (image_buffer_height-view_height)/2),
+      current_view_width, 
+      view_height,
+      image_buffer_current_width * sizeof(uint16_t));
 }
 
 /* framebuffer */
