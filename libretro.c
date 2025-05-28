@@ -40,7 +40,7 @@
 #include "mk5s/quick_loader.h"
 #include "mk5s/quick_path.h"
 
-#define CUSTOM_VERSION "+NC38"
+#define CUSTOM_VERSION "+NC41"
 
 retro_log_printf_t log_cb=NULL;
 static retro_video_refresh_t video_cb=NULL;
